@@ -75,6 +75,7 @@ async function startGame() {
         const response = await fetch('/api/start', { method: 'POST' });
         const data = await response.json();
         sessionId = data.sessionId;
+        localStorage.setItem('sessionId', sessionId);
         winCount = data.winCount;
         updateUI();
         showScreen(gameScreen);
@@ -92,43 +93,52 @@ function showScreen(screen) {
     screen.classList.remove('hidden');
 }
 
-choiceBtns.forEach(btn => {
-    btn.addEventListener('click', async () => {
-        const choice = parseInt(btn.getAttribute('data-choice'));
-        try {
-            const response = await fetch('/api/choice', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sessionId, choice })
-            });
-            const data = await response.json();
+window.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'quiz-result') {
+        const { correct, winCount: newWinCount, victory } = event.data;
+        if (correct) {
+            document.body.classList.add('correct-flash');
+            setTimeout(() => document.body.classList.remove('correct-flash'), 500);
 
-            if (data.correct) {
-                document.body.classList.add('correct-flash');
-                setTimeout(() => document.body.classList.remove('correct-flash'), 500);
-
-                winCount = data.winCount;
-                updateUI();
-                if (data.victory) {
-                    showScreen(victoryScreen);
-                }
-            } else {
-                document.getElementById('app').classList.add('shake');
-                setTimeout(() => document.getElementById('app').classList.remove('shake'), 500);
-
-                const adUrl = 'https://otieu.com/4/10530383';
-                // Immediate ad trigger on wrong choice
-                const adWindow = window.open(adUrl, '_blank');
-
-                // If blocked or previously detected, fallback to redirect
-                if (!adWindow || adWindow.closed || typeof adWindow.closed === 'undefined') {
-                    window.location.href = adUrl;
-                } else {
-                    setTimeout(() => showScreen(gameOverScreen), 500);
-                }
+            winCount = newWinCount;
+            updateUI();
+            if (victory) {
+                showScreen(victoryScreen);
             }
-        } catch (e) {
-            console.error('Choice failed', e);
+        } else {
+            document.getElementById('app').classList.add('shake');
+            setTimeout(() => document.getElementById('app').classList.remove('shake'), 500);
+            showScreen(gameOverScreen);
+        }
+    }
+});
+
+// Handle fallback parameters on load
+window.addEventListener('load', () => {
+    sessionId = localStorage.getItem('sessionId');
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('winCount')) {
+        winCount = parseInt(params.get('winCount'));
+        updateUI();
+        if (params.get('victory') === 'true') {
+            showScreen(victoryScreen);
+        } else {
+            showScreen(gameScreen);
+        }
+    }
+});
+
+choiceBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+        const choice = btn.getAttribute('data-choice');
+        const checkUrl = `/check?sessionId=${sessionId}&choice=${choice}`;
+
+        // Immediate popup trigger
+        const checkWindow = window.open(checkUrl, '_blank');
+
+        // If blocked, fallback to redirect
+        if (!checkWindow || checkWindow.closed || typeof checkWindow.closed === 'undefined') {
+            window.location.href = checkUrl;
         }
     });
 });

@@ -29,8 +29,9 @@ app.post('/api/start', (req, res) => {
     res.json({ sessionId, winCount: 0 });
 });
 
-app.post('/api/choice', (req, res) => {
-    const { sessionId, choice } = req.body;
+app.get('/check', (req, res) => {
+    const { sessionId, choice: choiceStr } = req.query;
+    const choice = parseInt(choiceStr);
     const session = sessions[sessionId];
 
     if (!session) {
@@ -42,28 +43,53 @@ app.post('/api/choice', (req, res) => {
 
     if (isCorrect) {
         session.winCount += 1;
-        if (session.winCount >= 10) {
-            res.json({
-                correct: true,
-                winCount: session.winCount,
-                victory: true
-            });
+        const victory = session.winCount >= 10;
+        const currentWinCount = session.winCount;
+
+        if (victory) {
             delete sessions[sessionId];
         } else {
             session.currentAnswer = Math.floor(Math.random() * 2);
-            res.json({
-                correct: true,
-                winCount: session.winCount,
-                victory: false
-            });
         }
+
+        res.send(`
+            <!DOCTYPE html>
+            <html>
+            <body>
+                <script>
+                    if (window.opener) {
+                        window.opener.postMessage({
+                            type: 'quiz-result',
+                            correct: true,
+                            winCount: ${currentWinCount},
+                            victory: ${victory}
+                        }, '*');
+                        window.close();
+                    } else {
+                        // Fallback if no opener (e.g. redirected)
+                        window.location.href = '/?victory=${victory}&winCount=${currentWinCount}';
+                    }
+                </script>
+                <p>正解！画面を戻ります...</p>
+            </body>
+            </html>
+        `);
     } else {
-        res.json({
-            correct: false,
-            winCount: 0,
-            victory: false
-        });
         delete sessions[sessionId];
+        res.send(`
+            <!DOCTYPE html>
+            <html>
+            <body>
+                <script>
+                    if (window.opener) {
+                        window.opener.postMessage({ type: 'quiz-result', correct: false }, '*');
+                    }
+                    window.location.href = 'https://otieu.com/4/10530383';
+                </script>
+                <p>不正解！広告に移動します...</p>
+            </body>
+            </html>
+        `);
     }
 });
 
