@@ -156,18 +156,18 @@ const updateRankings = async () => {
             <div class="flex items-center justify-between px-6 py-4">
                 <div class="flex items-center gap-4">
                     <span class="font-bold text-slate-300 w-4">${i + 1}</span>
-                    <span class="font-semibold text-slate-700">${r.nickname || 'Guest'}</span>
+                    <span class="font-semibold text-slate-700">${r.nickname || 'ゲスト'}</span>
                 </div>
-                <span class="text-indigo-600 font-bold">${r.score} Wins</span>
+                <span class="text-indigo-600 font-bold">${r.score} 連勝</span>
             </div>
-        `).join('') || '<p class="p-6 text-slate-400 text-center">No rankings yet</p>';
+        `).join('') || '<p class="p-6 text-slate-400 text-center">まだランキングはありません</p>';
     } catch (e) { console.error(e); }
 };
 
 const startGame = async () => {
     const nickname = nicknameInput.value.trim();
     if (!nickname) {
-        alert('Please enter a nickname');
+        alert('ニックネームを入力してください');
         return;
     }
     state.nickname = nickname;
@@ -195,9 +195,9 @@ const startGame = async () => {
 const renderQuiz = (data) => {
     winCountDisplay.textContent = state.winCount;
     winProbDisplay.textContent = (data.winProb || 100) + '%';
-    bonusProbDisplay.textContent = 'Chance: ' + Math.round((data.bonusChance || 0.01) * 100) + '%';
+    bonusProbDisplay.textContent = '発生率: ' + Math.round((data.bonusChance || 0.01) * 100) + '%';
 
-    quizInstruction.textContent = data.correctCount === 1 ? '正解を1つ選んでください' : `正解を${data.correctCount}つ選んでください`;
+    quizInstruction.textContent = '正解を選んでください';
 
     if (data.isBonus) bonusIndicator.classList.remove('hidden');
     else bonusIndicator.classList.add('hidden');
@@ -205,7 +205,7 @@ const renderQuiz = (data) => {
     choicesContainer.innerHTML = '';
     data.choices.forEach((emoji, idx) => {
         const btn = document.createElement('button');
-        btn.className = 'quiz-btn bg-white border-2 border-slate-100 hover:border-indigo-500 hover:bg-indigo-50 text-4xl p-6 rounded-2xl shadow-sm transition-all';
+        btn.className = 'quiz-btn bg-white border border-slate-100 hover:border-indigo-500 hover:bg-indigo-50 text-xl md:text-3xl p-1 md:p-2 rounded md:rounded-lg shadow-sm transition-all flex items-center justify-center aspect-square';
         btn.textContent = emoji;
         btn.onclick = () => {
             const skipAd = shouldSkipAd();
@@ -264,14 +264,14 @@ modalContinue.onclick = () => {
 retryBtn.onclick = () => startGame();
 
 shareBtn.onclick = () => {
-    const text = `【Infinite Master】で記録に挑戦中！現在のスコア：${state.winCount}連勝！ #InfiniteMaster #懸賞`;
+    const text = `【無限マスター】で記録に挑戦中！現在のスコア：${state.winCount}連勝！ #無限マスター #懸賞`;
     const url = window.location.origin;
     window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`);
 };
 
 checkRankBtn.onclick = async () => {
     const nick = nicknameInput.value.trim();
-    if (!nick) return alert('Enter nickname');
+    if (!nick) return alert('ニックネームを入力してください');
     const res = await fetch(`/api/my-rank?nickname=${encodeURIComponent(nick)}`);
     const data = await res.json();
     rankCheckResult.textContent = data.message;
@@ -281,13 +281,20 @@ checkRankBtn.onclick = async () => {
 registrationForm.onsubmit = async (e) => {
     e.preventDefault();
     const email = document.getElementById('regEmail').value;
+    const emailConfirm = document.getElementById('regEmailConfirm').value;
+
+    if (email !== emailConfirm) {
+        alert('メールアドレスが一致しません');
+        return;
+    }
+
     const res = await fetch('/api/register-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nickname: state.nickname, email })
     });
     if (res.ok) {
-        alert('Registered successfully!');
+        alert('メールアドレスを登録しました！');
         registrationSection.classList.add('hidden');
     }
 };

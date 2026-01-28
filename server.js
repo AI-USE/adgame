@@ -58,28 +58,17 @@ function getRandomEmojis(count) {
 }
 
 function generateDifficulty(winCount = 0, bonusMissRate = null, winProb = 100) {
-    let totalCount, correctCount;
+    const totalCount = 100;
+    let correctCount;
 
     if (bonusMissRate !== null) {
-        // Bonus Play: fixed miss rate between 10-70%
-        totalCount = 10;
+        // Bonus Play: fixed miss rate
         correctCount = Math.round(totalCount * (1 - bonusMissRate));
-        correctCount = Math.max(1, Math.min(9, correctCount));
+        correctCount = Math.max(1, Math.min(99, correctCount));
     } else {
-        // Normal Progressive Difficulty based on winProb
-        // numChoices = ceil(100 / winProb)
-        let base = Math.ceil(100 / winProb);
-
-        // Random fluctuation
-        const rand = Math.random();
-        if (rand < 0.1) base -= 1;
-        else if (rand < 0.3) base += 1;
-
-        totalCount = Math.max(2, Math.min(8, base));
-        correctCount = 1;
-        if (totalCount > 4 && Math.random() > 0.8) {
-            correctCount = 2;
-        }
+        // Normal Progressive Difficulty: correctCount is winProb
+        correctCount = Math.round(winProb);
+        correctCount = Math.max(1, Math.min(99, correctCount));
     }
 
     const emojis = getRandomEmojis(totalCount);
@@ -139,7 +128,7 @@ app.post('/api/start', (req, res) => {
     const winProb = 100;
     const diff = generateDifficulty(0, null, winProb);
     sessions[sessionId] = {
-        nickname: nickname || 'Guest',
+        nickname: nickname || 'ゲスト',
         winCount: 0,
         winProb: winProb,
         ...diff,
@@ -370,7 +359,7 @@ app.post('/api/register-email', (req, res) => {
     // Deadline: Feb 4th, 2026. Block after start of Feb 5th UTC.
     const deadline = new Date('2026-02-05T00:00:00Z');
     if (new Date() > deadline) {
-        return res.status(403).json({ error: 'Event has ended' });
+        return res.status(403).json({ error: 'イベントは終了しました' });
     }
     const { nickname, email } = req.body;
     emails.push({ nickname, email, date: new Date() });

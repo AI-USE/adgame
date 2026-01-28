@@ -23,8 +23,8 @@
 
     <!-- Header Banner -->
     <div class="bg-indigo-600 text-white py-2 px-4 text-center text-sm font-medium">
-        🏆 <span class="font-bold">Prize Pool: 7,000 JPY</span> - Event Ends Feb 4th!
-        <span class="opacity-80 ml-2">(Top 5 rankers will be notified via email after the event)</span>
+        🏆 <span class="font-bold">賞金総額: 7,000円</span> - 2月4日まで開催中！
+        <span class="opacity-80 ml-2">(上位5名にはイベント終了後にメールで通知されます)</span>
     </div>
 
     <main class="flex-grow container mx-auto max-w-2xl px-4 py-8 flex flex-col items-center justify-center">
@@ -33,14 +33,14 @@
         <div id="start-screen" class="w-full text-center space-y-8 animate-fade-in">
             <div class="space-y-2">
                 <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900">
-                    Infinite Master
+                    無限マスター
                 </h1>
                 <p class="text-slate-500 text-lg">次々と現れる絵文字の中から正解を見つけ出せ</p>
             </div>
 
             <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 space-y-6">
                 <div class="space-y-4">
-                    <label for="nickname" class="block text-sm font-semibold text-slate-700 text-left ml-1">Nickname</label>
+                    <label for="nickname" class="block text-sm font-semibold text-slate-700 text-left ml-1">ニックネーム</label>
                     <input type="text" id="nickname"
                         class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
                         placeholder="ニックネームを入力" maxlength="15">
@@ -53,7 +53,7 @@
 
                 <div class="pt-6 border-t border-slate-100 flex items-center justify-between gap-4">
                     <button id="check-rank-btn" class="text-slate-600 hover:text-indigo-600 text-sm font-medium transition-colors">
-                        順位を確認する
+                        自分の順位を確認する
                     </button>
                     <p id="rank-check-result" class="text-sm font-bold text-indigo-600 hidden"></p>
                 </div>
@@ -69,29 +69,29 @@
         <div id="game-screen" class="hidden w-full space-y-8 text-center animate-fade-in">
             <div class="grid grid-cols-2 md:grid-cols-3 gap-4 w-full px-2">
                 <div class="text-left">
-                    <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Score</p>
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">現在の連勝数</p>
                     <p class="text-3xl font-black text-slate-900" id="win-count">0</p>
                 </div>
                 <div class="text-center hidden md:block">
                     <div id="bonus-indicator" class="hidden bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-xs font-bold animate-pulse inline-block">
-                        ✨ BONUS PLAY! ✨
+                        ✨ ボーナスプレー！ ✨
                     </div>
                 </div>
                 <div class="text-right space-y-1">
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Prob / Bonus</p>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">当選確率 / ボーナス</p>
                     <div class="flex flex-col items-end">
                         <span id="win-prob-display" class="text-sm font-bold text-indigo-600">100%</span>
-                        <span id="bonus-prob-display" class="text-[10px] font-medium text-slate-500">Chance: 1%</span>
+                        <span id="bonus-prob-display" class="text-[10px] font-medium text-slate-500">発生率: 1%</span>
                     </div>
                 </div>
             </div>
 
-            <div class="bg-white p-8 md:p-12 rounded-3xl shadow-xl border border-slate-100 space-y-8 min-h-[300px] flex flex-col justify-center">
+            <div class="bg-white p-4 md:p-8 rounded-3xl shadow-xl border border-slate-100 space-y-8 min-h-[300px] flex flex-col justify-center">
                 <h2 class="text-xl font-semibold text-slate-700" id="quiz-instruction">
-                    正解を1つ選んでください
+                    正解を選んでください
                 </h2>
 
-                <div id="choices-container" class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div id="choices-container" class="grid grid-cols-5 md:grid-cols-10 gap-1 md:gap-2">
                     <!-- Dynamic buttons -->
                 </div>
             </div>
@@ -100,7 +100,7 @@
         <!-- Game Over Screen -->
         <div id="game-over-screen" class="hidden w-full space-y-8 text-center animate-scale-up">
             <div class="space-y-2">
-                <h1 class="text-5xl font-black text-slate-900">Game Over</h1>
+                <h1 class="text-5xl font-black text-slate-900">GAME OVER</h1>
                 <p class="text-slate-500 text-xl">最終スコア: <span id="final-score" class="font-bold text-indigo-600 text-2xl">0</span></p>
             </div>
 
@@ -113,7 +113,10 @@
                 <form id="registration-form" class="space-y-3">
                     <input type="email" id="regEmail" required
                         class="w-full px-4 py-3 rounded-xl border border-emerald-200 focus:ring-2 focus:ring-emerald-500 outline-none"
-                        placeholder="email@example.com">
+                        placeholder="メールアドレス">
+                    <input type="email" id="regEmailConfirm" required
+                        class="w-full px-4 py-3 rounded-xl border border-emerald-200 focus:ring-2 focus:ring-emerald-500 outline-none"
+                        placeholder="メールアドレス（確認）">
                     <button type="submit"
                         class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition-colors">
                         メールアドレスを登録
@@ -124,7 +127,7 @@
             <div class="flex flex-col gap-4">
                 <button id="retry-btn"
                     class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-5 rounded-2xl shadow-lg transition-all transform hover:-translate-y-0.5">
-                    もう一度挑戦する (AD)
+                    もう一度挑戦する
                 </button>
                 <button id="share-btn"
                     class="w-full bg-sky-500 hover:bg-sky-600 text-white font-bold py-4 rounded-2xl transition-colors">
@@ -137,7 +140,7 @@
         <div id="ranking-container" class="w-full mt-16 bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
             <div class="bg-slate-50 px-6 py-4 border-b border-slate-200">
                 <h3 class="font-bold text-slate-800 flex items-center gap-2">
-                    📊 Leaderboard <span class="text-xs font-normal text-slate-400">Top 5 Only</span>
+                    📊 リーダーボード <span class="text-xs font-normal text-slate-400">上位5名を表示</span>
                 </h3>
             </div>
             <div class="divide-y divide-slate-100" id="ranking-list">
@@ -150,7 +153,7 @@
     <footer class="py-8 text-center text-slate-400 text-sm border-t border-slate-100 bg-white mt-12">
         <div class="container mx-auto px-4 space-x-4">
             <a href="terms.html" class="hover:text-slate-600 underline">利用規約</a>
-            <span>&copy; 2026 Infinite Master</span>
+            <span>&copy; 2026 無限マスター</span>
         </div>
     </footer>
 
@@ -158,11 +161,11 @@
     <div id="wait-overlay" class="fixed inset-0 bg-slate-900/95 backdrop-blur-md z-[60] flex items-center justify-center p-4 hidden select-none">
         <div class="text-center space-y-8 max-w-sm w-full">
             <div class="space-y-4">
-                <h2 class="text-3xl font-black text-white tracking-tight">WAIT!</h2>
+                <h2 class="text-3xl font-black text-white tracking-tight">お待ちください</h2>
                 <div class="text-6xl font-black text-indigo-400 tabular-nums" id="wait-timer">10</div>
             </div>
             <div class="p-6 bg-white/5 rounded-2xl border border-white/10 space-y-2">
-                <p class="text-rose-400 font-bold animate-pulse">DO NOT TOUCH ANYTHING</p>
+                <p class="text-rose-400 font-bold animate-pulse">画面に触れないでください</p>
                 <p class="text-slate-400 text-sm">画面に触れるとタイマーがリセットされます</p>
             </div>
         </div>
