@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>目指せ十連続マスター</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Start Screen -->
+        <div id="start-screen" class="screen">
+            <h1>目指せ十連続マスター</h1>
+            <p>二択クイズに10回連続で正解してマスターを目指そう！</p>
+            <p class="warning">※不正解時はゲームオーバーとなり、スポンサー広告が表示されます</p>
+            <button id="start-btn">ゲーム開始</button>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="game-screen" class="screen hidden">
+            <h1>目指せ十連続マスター</h1>
+            <div class="status">
+                連勝数: <span id="win-count">0</span> / 10
+            </div>
+            <div class="quiz-container">
+                <p>どちらかが正解です。選んでください。</p>
+                <div class="choices">
+                    <button class="choice-btn" data-choice="0">A</button>
+                    <button class="choice-btn" data-choice="1">B</button>
+                </div>
+            </div>
+            <p class="small-warning">※不正解時はゲームオーバーとなり、スポンサー広告が表示されます</p>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="game-over-screen" class="screen hidden">
+            <h1>ゲームオーバー...</h1>
+            <p>残念！連勝がストップしました。</p>
+            <div id="ad-trigger" class="ad-trigger">
+                ここをクリックして再挑戦
+            </div>
+        </div>
+
+        <!-- Victory Screen -->
+        <div id="victory-screen" class="screen hidden">
+            <h1>十連続マスター達成！</h1>
+            <p>おめでとうございます！あなたは真のマスターです。</p>
+            <button id="retry-btn">もう一度プレイ</button>
+        </div>
+
+        <!-- Block Warning Modal -->
+        <div id="block-modal" class="modal hidden">
+            <div class="modal-content">
+                <h2>環境チェック</h2>
+                <p id="block-message"></p>
+                <div class="modal-actions">
+                    <button id="modal-continue">続行</button>
+                    <button id="modal-howto">設定方法を見る</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AdBlock Bait -->
+    <div id="ad-bait" class="ad-bait ads-banner" style="position: absolute; left: -9999px;">&nbsp;</div>
+
+    <script src="ads.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
