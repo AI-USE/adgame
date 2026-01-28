@@ -11,6 +11,8 @@ const gameScreen = document.getElementById('game-screen');
 const gameOverScreen = document.getElementById('game-over-screen');
 const nicknameInput = document.getElementById('nickname');
 const winCountDisplay = document.getElementById('win-count');
+const winProbDisplay = document.getElementById('win-prob-display');
+const bonusProbDisplay = document.getElementById('bonus-prob-display');
 const choicesContainer = document.getElementById('choices-container');
 const quizInstruction = document.getElementById('quiz-instruction');
 const bonusIndicator = document.getElementById('bonus-indicator');
@@ -25,9 +27,93 @@ const checkRankBtn = document.getElementById('check-rank-btn');
 const rankCheckResult = document.getElementById('rank-check-result');
 const blockModal = document.getElementById('block-modal');
 const modalContinue = document.getElementById('modal-continue');
+const waitOverlay = document.getElementById('wait-overlay');
+const waitTimerDisplay = document.getElementById('wait-timer');
+
+// Ad Tracking Logic
+function getAdStatus() {
+    const now = new Date();
+    const hourKey = `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}-${now.getHours()}`;
+    let stats = JSON.parse(localStorage.getItem('ad_status') || '{}');
+
+    if (stats.hourKey !== hourKey) {
+        stats = {
+            hourKey: hourKey,
+            count: 0,
+            limit: Math.floor(Math.random() * 3) + 1 // 1-3 times
+        };
+        localStorage.setItem('ad_status', JSON.stringify(stats));
+    }
+    return stats;
+}
+
+function incrementAdCount() {
+    const stats = getAdStatus();
+    stats.count++;
+    localStorage.setItem('ad_status', JSON.stringify(stats));
+}
+
+function shouldSkipAd() {
+    const stats = getAdStatus();
+    return stats.count >= stats.limit;
+}
+
+// Wait Penalty Logic
+let waitInterval = null;
+let currentWaitTime = 0;
+
+function startWaitPenalty() {
+    const finishAt = Date.now() + 10000;
+    localStorage.setItem('wait_finish_at', finishAt.toString());
+
+    waitOverlay.classList.remove('hidden');
+
+    if (waitInterval) clearInterval(waitInterval);
+    waitInterval = setInterval(updateWaitTick, 100);
+}
+
+function updateWaitTick() {
+    const finishAt = parseInt(localStorage.getItem('wait_finish_at') || '0');
+    const remaining = Math.max(0, Math.ceil((finishAt - Date.now()) / 1000));
+    currentWaitTime = remaining;
+    waitTimerDisplay.textContent = remaining;
+
+    if (remaining <= 0) {
+        endWaitPenalty();
+    }
+}
+
+function resetWaitPenalty() {
+    const finishAt = parseInt(localStorage.getItem('wait_finish_at') || '0');
+    if (finishAt > Date.now()) {
+        const newFinishAt = Date.now() + 10000;
+        localStorage.setItem('wait_finish_at', newFinishAt.toString());
+        updateWaitTick();
+    }
+}
+
+function endWaitPenalty() {
+    clearInterval(waitInterval);
+    waitInterval = null;
+    localStorage.removeItem('wait_finish_at');
+    waitOverlay.classList.add('hidden');
+    startGame(); // Restart
+}
+
+// Interaction listeners for wait penalty
+window.addEventListener('mousedown', resetWaitPenalty);
+window.addEventListener('touchstart', resetWaitPenalty);
+window.addEventListener('keydown', resetWaitPenalty);
 
 // Initialize
 if (state.nickname) nicknameInput.value = state.nickname;
+
+// Check for existing wait penalty on load
+const savedWaitFinish = parseInt(localStorage.getItem('wait_finish_at') || '0');
+if (savedWaitFinish > Date.now()) {
+    waitOverlay.classList.remove('hidden');
+    waitInterval = setInterval(updateWaitTick, 100);
+}
 
 async function checkEnvironment() {
     // AdBlock Check
@@ -108,6 +194,9 @@ const startGame = async () => {
 
 const renderQuiz = (data) => {
     winCountDisplay.textContent = state.winCount;
+    winProbDisplay.textContent = (data.winProb || 100) + '%';
+    bonusProbDisplay.textContent = 'Chance: ' + Math.round((data.bonusChance || 0.01) * 100) + '%';
+
     quizInstruction.textContent = data.correctCount === 1 ? '正解を1つ選んでください' : `正解を${data.correctCount}つ選んでください`;
 
     if (data.isBonus) bonusIndicator.classList.remove('hidden');
@@ -119,9 +208,13 @@ const renderQuiz = (data) => {
         btn.className = 'quiz-btn bg-white border-2 border-slate-100 hover:border-indigo-500 hover:bg-indigo-50 text-4xl p-6 rounded-2xl shadow-sm transition-all';
         btn.textContent = emoji;
         btn.onclick = () => {
-            const url = `/check?sessionId=${state.sessionId}&choice=${idx}`;
+            const skipAd = shouldSkipAd();
+            const url = `/check?sessionId=${state.sessionId}&choice=${idx}${skipAd ? '&noRedirect=1' : ''}`;
+
             const win = window.open(url, '_blank');
-            if (!win) window.location.href = url;
+            if (!win) {
+                window.location.href = url;
+            }
         };
         choicesContainer.appendChild(btn);
     });
@@ -129,13 +222,18 @@ const renderQuiz = (data) => {
 
 // Listen for results
 window.addEventListener('message', (e) => {
-    if (e.data.type === 'quiz-result') {
+    if (e.data && e.data.type === 'quiz-result') {
         if (e.data.correct) {
             state.winCount = e.data.winCount;
             renderQuiz(e.data);
             document.body.classList.add('bg-emerald-50');
             setTimeout(() => document.body.classList.remove('bg-emerald-50'), 300);
         } else {
+            if (!e.data.limitReached) {
+                incrementAdCount();
+                // ad popup handles redirect
+            }
+
             finalScoreDisplay.textContent = e.data.score;
             if (e.data.token) {
                 registrationSection.classList.remove('hidden');
@@ -146,6 +244,10 @@ window.addEventListener('message', (e) => {
             updateRankings();
             document.body.classList.add('shake');
             setTimeout(() => document.body.classList.remove('shake'), 500);
+
+            if (e.data.limitReached) {
+                startWaitPenalty();
+            }
         }
     }
 });

@@ -57,28 +57,26 @@ function getRandomEmojis(count) {
     return shuffled.slice(0, count);
 }
 
-function generateDifficulty(winCount = 0, bonusMissRate = null) {
+function generateDifficulty(winCount = 0, bonusMissRate = null, winProb = 100) {
     let totalCount, correctCount;
 
     if (bonusMissRate !== null) {
         // Bonus Play: fixed miss rate between 10-70%
-        // Win rate = 1 - bonusMissRate (0.3 to 0.9)
         totalCount = 10;
         correctCount = Math.round(totalCount * (1 - bonusMissRate));
         correctCount = Math.max(1, Math.min(9, correctCount));
     } else {
-        // Normal Progressive Difficulty
-        // Base buttons: 2 + floor(winCount/5)
-        let base = 2 + Math.floor(winCount / 5);
+        // Normal Progressive Difficulty based on winProb
+        // numChoices = ceil(100 / winProb)
+        let base = Math.ceil(100 / winProb);
 
-        // Random fluctuation: 10% chance easier, 20% chance harder
+        // Random fluctuation
         const rand = Math.random();
         if (rand < 0.1) base -= 1;
         else if (rand < 0.3) base += 1;
 
-        totalCount = Math.max(2, Math.min(6, base));
+        totalCount = Math.max(2, Math.min(8, base));
         correctCount = 1;
-        // Occasionally 2 correct if buttons > 4
         if (totalCount > 4 && Math.random() > 0.8) {
             correctCount = 2;
         }
@@ -138,10 +136,12 @@ app.post('/api/start', (req, res) => {
     }
 
     const sessionId = uuidv4();
-    const diff = generateDifficulty(0);
+    const winProb = 100;
+    const diff = generateDifficulty(0, null, winProb);
     sessions[sessionId] = {
         nickname: nickname || 'Guest',
         winCount: 0,
+        winProb: winProb,
         ...diff,
         bonusChance: 0.01,
         lastSeen: Date.now()
@@ -151,6 +151,8 @@ app.post('/api/start', (req, res) => {
     res.json({
         sessionId,
         winCount: 0,
+        winProb: winProb,
+        bonusChance: 0.01,
         choices: diff.emojis,
         correctCount: diff.correctCount,
         isBonus: false
@@ -158,7 +160,7 @@ app.post('/api/start', (req, res) => {
 });
 
 app.get('/check', (req, res) => {
-    const { sessionId, choice: choiceStr } = req.query;
+    const { sessionId, choice: choiceStr, noRedirect } = req.query;
     const choice = parseInt(choiceStr);
     const session = sessions[sessionId];
 
@@ -172,13 +174,21 @@ app.get('/check', (req, res) => {
     if (isCorrect) {
         session.winCount += 1;
         stats.totalCorrect += 1;
-        session.bonusChance += 0.01;
+        session.bonusChance += 0.02; // Increased by 2%
+
+        // Update winProb: random decrease 1-5, 5% chance of 0. min 15.
+        if (Math.random() >= 0.05) {
+            const decrease = Math.floor(Math.random() * 5) + 1;
+            session.winProb = Math.max(15, session.winProb - decrease);
+        }
+
         const currentWinCount = session.winCount;
+        const currentWinProb = session.winProb;
 
         let bonusMissRate = null;
         let isBonus = false;
         if (Math.random() < session.bonusChance) {
-            bonusMissRate = Math.random() * 0.6 + 0.1; // 10% to 70% miss
+            bonusMissRate = Math.random() * 0.6 + 0.1;
             session.bonusChance = 0.01;
             isBonus = true;
         }
@@ -191,7 +201,7 @@ app.get('/check', (req, res) => {
 
         saveData();
 
-        const nextDiff = generateDifficulty(currentWinCount, bonusMissRate);
+        const nextDiff = generateDifficulty(currentWinCount, bonusMissRate, currentWinProb);
         session.emojis = nextDiff.emojis;
         session.correctIndices = nextDiff.correctIndices;
         session.correctCount = nextDiff.correctCount;
@@ -205,6 +215,8 @@ app.get('/check', (req, res) => {
                         type: 'quiz-result',
                         correct: true,
                         winCount: ${currentWinCount},
+                        winProb: ${currentWinProb},
+                        bonusChance: ${session.bonusChance},
                         choices: ${JSON.stringify(nextDiff.emojis)},
                         correctCount: ${nextDiff.correctCount},
                         isBonus: ${isBonus}
@@ -216,6 +228,8 @@ app.get('/check', (req, res) => {
                         const params = new URLSearchParams({
                             correct: 'true',
                             winCount: currentWinCount,
+                            winProb: currentWinProb,
+                            bonusChance: session.bonusChance,
                             choices: JSON.stringify(data.choices),
                             correctCount: data.correctCount,
                             isBonus: data.isBonus
@@ -272,12 +286,21 @@ app.get('/check', (req, res) => {
                             type: 'quiz-result',
                             correct: false,
                             score: ${finalScore},
-                            token: ${topToken ? `'${topToken}'` : 'null'}
+                            token: ${topToken ? `'${topToken}'` : 'null'},
+                            limitReached: ${noRedirect === '1'}
                         }, '*');
                     }
-                    window.location.href = '${config.sponsorUrl}';
+                    if ('${noRedirect}' === '1') {
+                        if (window.opener) {
+                           window.close();
+                        } else {
+                           window.location.href = '/?failed=1&score=${finalScore}';
+                        }
+                    } else {
+                        window.location.href = '${config.sponsorUrl}';
+                    }
                 </script>
-                <p>不正解！広告に移動します...</p>
+                <p>不正解！${noRedirect === '1' ? '画面を戻ります...' : '広告に移動します...'}</p>
             </body>
             </html>
         `);
