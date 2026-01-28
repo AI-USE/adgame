@@ -3,157 +3,149 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>管理者ダッシュボード - 無限マスターへの道</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Admin Dashboard - Infinite Master</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        .admin-container {
-            max-width: 800px;
-            margin: 2rem auto;
-            padding: 2rem;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-        .stat-card {
-            background: #f8f9fa;
-            padding: 1rem;
-            border-radius: 8px;
-            text-align: center;
-        }
-        .stat-value {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #1a73e8;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 1rem;
-        }
-        th, td {
-            text-align: left;
-            padding: 0.75rem;
-            border-bottom: 1px solid #eee;
-        }
-        .login-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-        .login-box {
-            background: white;
-            padding: 2rem;
-            border-radius: 12px;
-            text-align: center;
-        }
-        input[type="password"], input[type="number"] {
-            padding: 0.5rem;
-            margin: 0.5rem 0;
-            width: 100%;
-            box-sizing: border-box;
-        }
-        .delete-btn {
-            background: #d93025;
-            color: white;
-            border: none;
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .dummy-form {
-            background: #f1f3f4;
-            padding: 1rem;
-            border-radius: 8px;
-            margin-bottom: 2rem;
-        }
+        body { font-family: 'Inter', sans-serif; }
     </style>
 </head>
-<body>
-    <div id="login-overlay" class="login-overlay">
-        <div class="login-box">
-            <h2>管理者ログイン</h2>
-            <input type="password" id="admin-password" placeholder="パスワードを入力">
-            <button id="login-btn">ログイン</button>
+<body class="bg-slate-50 text-slate-800 font-sans p-4 md:p-8">
+
+    <!-- Login Overlay -->
+    <div id="login-overlay" class="fixed inset-0 bg-slate-900/90 backdrop-blur-md flex items-center justify-center z-50">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl max-w-sm w-full space-y-6">
+            <div class="text-center">
+                <h2 class="text-2xl font-bold text-slate-900">Admin Login</h2>
+                <p class="text-slate-500 text-sm">Please enter the dashboard password</p>
+            </div>
+            <div class="space-y-4">
+                <input type="password" id="admin-password"
+                    class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none"
+                    placeholder="Password">
+                <button id="login-btn"
+                    class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition-colors">
+                    Login
+                </button>
+            </div>
         </div>
     </div>
 
-    <div class="admin-container hidden" id="admin-dashboard">
-        <h1>管理者ダッシュボード</h1>
+    <!-- Main Dashboard -->
+    <div id="admin-dashboard" class="hidden max-w-6xl mx-auto space-y-8">
 
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div>総プレイ回数</div>
-                <div class="stat-value" id="total-plays">0</div>
+        <header class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+            <div>
+                <h1 class="text-2xl font-black text-slate-900">Dashboard</h1>
+                <p class="text-slate-500 text-sm">Infinite Master System Management</p>
             </div>
-            <div class="stat-card">
-                <div>総正解数</div>
-                <div class="stat-value" id="total-correct">0</div>
+            <div class="flex items-center gap-3">
+                <button onclick="location.reload()" class="bg-white hover:bg-slate-50 border border-slate-200 px-6 py-2 rounded-xl font-semibold text-sm transition-colors shadow-sm">
+                    Refresh
+                </button>
             </div>
-            <div class="stat-card">
-                <div>総不正解数</div>
-                <div class="stat-value" id="total-incorrect">0</div>
+        </header>
+
+        <!-- Stats Grid -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                <p class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Total Plays</p>
+                <p class="text-3xl font-black text-slate-900" id="total-plays">0</p>
             </div>
-            <div class="stat-card">
-                <div>アクティブセッション</div>
-                <div class="stat-value" id="active-sessions">0</div>
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                <p class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Correct</p>
+                <p class="text-3xl font-black text-emerald-600" id="total-correct">0</p>
+            </div>
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                <p class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Incorrect</p>
+                <p class="text-3xl font-black text-rose-500" id="total-incorrect">0</p>
+            </div>
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                <p class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Active Sessions</p>
+                <p class="text-3xl font-black text-indigo-600" id="active-sessions">0</p>
             </div>
         </div>
 
-        <div class="dummy-form">
-            <h3>ダミー成績入力</h3>
-            <input type="text" id="dummy-nickname" placeholder="ニックネームを入力">
-            <input type="number" id="dummy-score" placeholder="連勝数を入力">
-            <button id="add-dummy-btn">追加</button>
+        <!-- Ad Configuration -->
+        <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+                <h2 class="font-bold text-slate-700">Ad Configuration</h2>
+            </div>
+            <div class="p-6">
+                <div class="flex gap-4">
+                    <input type="text" id="sponsor-url"
+                        class="flex-grow bg-slate-100 border-none px-4 py-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                        placeholder="https://sponsor-ad-url.com">
+                    <button id="save-config-btn"
+                        class="bg-white hover:bg-slate-900 hover:text-white border-2 border-slate-900 px-8 py-3 rounded-xl font-bold transition-all">
+                        Save URL
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Rankings & Emails Combined -->
+        <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+                <h2 class="font-bold text-slate-700">Rankings & Registered Emails</h2>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-slate-50 text-slate-400 text-xs font-bold uppercase tracking-widest">
+                        <tr>
+                            <th class="px-6 py-4">Rank</th>
+                            <th class="px-6 py-4">Nickname</th>
+                            <th class="px-6 py-4 text-indigo-600">Score</th>
+                            <th class="px-6 py-4">Email</th>
+                            <th class="px-6 py-4">Date</th>
+                            <th class="px-6 py-4">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ranking-tbody" class="divide-y divide-slate-100">
+                        <!-- Dynamic Rows -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <div class="grid md:grid-cols-2 gap-8">
+            <!-- Dummy Entry -->
+            <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+                    <h2 class="font-bold text-slate-700">Manual Entry (Test)</h2>
+                </div>
+                <div class="p-6 space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <input type="text" id="dummy-nickname" placeholder="Nickname" class="bg-slate-100 border-none px-4 py-3 rounded-xl outline-none">
+                        <input type="number" id="dummy-score" placeholder="Score" class="bg-white border-2 border-slate-100 px-4 py-3 rounded-xl outline-none">
+                    </div>
+                    <button id="add-dummy-btn" class="w-full bg-white hover:bg-slate-900 hover:text-white border-2 border-slate-900 py-3 rounded-xl font-bold transition-all">
+                        Add Entry
+                    </button>
+                </div>
+            </section>
+
+            <!-- Recent History -->
+            <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50 text-slate-700 font-bold">
+                    Recent History
+                </div>
+                <div class="max-h-[300px] overflow-y-auto">
+                    <table class="w-full text-left">
+                        <thead class="bg-slate-50 text-slate-400 text-[10px] uppercase font-bold tracking-widest">
+                            <tr>
+                                <th class="px-6 py-3">ID</th>
+                                <th class="px-6 py-3">Score</th>
+                                <th class="px-6 py-3">Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-tbody" class="divide-y divide-slate-50">
+                            <!-- Rows -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
         </div>
-
-        <h2>ランキング管理</h2>
-        <table id="ranking-table">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>ニックネーム</th>
-                    <th>スコア</th>
-                    <th>日付</th>
-                    <th>操作</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-
-        <h2>最近の履歴</h2>
-        <table id="history-table">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>スコア</th>
-                    <th>日付</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-
-        <h2>登録メールアドレス一覧</h2>
-        <button id="refresh-emails-btn">メールアドレス一覧を更新</button>
-        <table id="email-table">
-            <thead>
-                <tr>
-                    <th>ニックネーム</th>
-                    <th>メールアドレス</th>
-                    <th>登録日</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
     </div>
 
     <script src="admin.js"></script>

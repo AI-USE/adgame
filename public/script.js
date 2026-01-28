@@ -1,274 +1,193 @@
-let sessionId = null;
-let winCount = 0;
+const state = {
+    sessionId: null,
+    winCount: 0,
+    nickname: localStorage.getItem('nickname') || '',
+    isAdBlockDetected: false
+};
 
-const startBtn = document.getElementById('start-btn');
-const adTrigger = document.getElementById('ad-trigger');
-const modalContinue = document.getElementById('modal-continue');
-const modalHowto = document.getElementById('modal-howto');
-
+// Elements
 const startScreen = document.getElementById('start-screen');
 const gameScreen = document.getElementById('game-screen');
 const gameOverScreen = document.getElementById('game-over-screen');
-const blockModal = document.getElementById('block-modal');
-const blockMessage = document.getElementById('block-message');
-
+const nicknameInput = document.getElementById('nickname');
 const winCountDisplay = document.getElementById('win-count');
 const choicesContainer = document.getElementById('choices-container');
 const quizInstruction = document.getElementById('quiz-instruction');
 const bonusIndicator = document.getElementById('bonus-indicator');
+const finalScoreDisplay = document.getElementById('final-score');
+const registrationSection = document.getElementById('registration-section');
+const registrationForm = document.getElementById('registration-form');
+const rankingList = document.getElementById('ranking-list');
+const startBtn = document.getElementById('start-btn');
+const retryBtn = document.getElementById('retry-btn');
+const shareBtn = document.getElementById('share-btn');
 const checkRankBtn = document.getElementById('check-rank-btn');
 const rankCheckResult = document.getElementById('rank-check-result');
-const rankingsList = document.getElementById('rankings-list');
-const finalScoreDisplay = document.getElementById('final-score');
-const tokenDisplay = document.getElementById('token-display');
-const rankToken = document.getElementById('rank-token');
-const nicknameInput = document.getElementById('nickname-input');
-const emailSection = document.getElementById('email-section');
-const emailInput1 = document.getElementById('email-input-1');
-const emailInput2 = document.getElementById('email-input-2');
-const emailSubmitBtn = document.getElementById('email-submit-btn');
+const blockModal = document.getElementById('block-modal');
+const modalContinue = document.getElementById('modal-continue');
 
-let popupBlockDetected = false;
-let currentNickname = '';
+// Initialize
+if (state.nickname) nicknameInput.value = state.nickname;
 
-// Environment Check
 async function checkEnvironment() {
-    let adBlockEnabled = false;
-    let popupBlockEnabled = false;
-
     // AdBlock Check
     const bait = document.getElementById('ad-bait');
+    let adBlockEnabled = false;
     if (!bait || bait.offsetParent === null || bait.offsetHeight === 0 || window.canRunAds !== true) {
         adBlockEnabled = true;
     }
 
-    // Popup Check (must be triggered by user action)
-    const popup = window.open('about:blank', '_blank', 'width=100,height=100');
+    // Popup Check
+    const popup = window.open('about:blank', '_blank', 'width=1,height=1');
+    let popupBlockEnabled = false;
     if (!popup || popup.closed || typeof popup.closed === 'undefined') {
         popupBlockEnabled = true;
-        popupBlockDetected = true;
     } else {
         popup.close();
-        popupBlockDetected = false;
     }
 
     if (adBlockEnabled || popupBlockEnabled) {
-        let message = '快適なプレイのために以下の設定を確認してください：<br><br>';
-        if (adBlockEnabled) message += '・広告ブロックが有効です<br>';
-        if (popupBlockEnabled) {
-            message += '・ポップアップブロックが有効です<br>';
-            message += '<small>※ブロックされた場合、不正解時に画面が切り替わります</small><br>';
-        }
-        blockMessage.innerHTML = message;
+        let msg = '';
+        if (adBlockEnabled) msg += '広告ブロックが有効です。';
+        if (popupBlockEnabled) msg += 'ポップアップブロックが有効です。';
+        document.getElementById('block-message').textContent = msg + ' そのまま続行しますか？';
         blockModal.classList.remove('hidden');
         return false;
     }
-
     return true;
 }
 
-startBtn.addEventListener('click', async () => {
-    const ok = await checkEnvironment();
-    if (ok) {
-        startGame();
-    }
-});
-
-modalContinue.addEventListener('click', () => {
-    blockModal.classList.add('hidden');
-    startGame();
-});
-
-modalHowto.addEventListener('click', () => {
-    alert('ブラウザの設定から広告ブロックやポップアップブロックを無効にしてください。');
-});
-
-async function updateRankings() {
-    try {
-        const response = await fetch('/api/rankings');
-        const data = await response.json();
-        rankingsList.innerHTML = '';
-        data.forEach((r, i) => {
-            const li = document.createElement('li');
-            const nameSpan = document.createElement('span');
-            nameSpan.textContent = `${i + 1}. ${r.nickname || 'Guest'}`;
-            const scoreSpan = document.createElement('span');
-            scoreSpan.textContent = `${r.score}連勝`;
-            li.appendChild(nameSpan);
-            li.appendChild(scoreSpan);
-            rankingsList.appendChild(li);
-        });
-    } catch (e) {
-        console.error('Failed to update rankings', e);
-    }
-}
-
-async function startGame() {
-    const nickname = nicknameInput.value.trim();
-    if (!nickname) {
-        alert('ニックネームを入力してください');
-        return;
-    }
-    currentNickname = nickname;
-    localStorage.setItem('nickname', nickname);
-
-    try {
-        const response = await fetch('/api/start', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ nickname })
-        });
-        const data = await response.json();
-
-        if (!response.ok) {
-            if (response.status === 403 && data.error === 'Daily Limit') {
-                alert(data.message);
-                return;
-            }
-            throw new Error(data.error || 'Failed to start');
-        }
-
-        sessionId = data.sessionId;
-        localStorage.setItem('sessionId', sessionId);
-        winCount = data.winCount;
-        renderChoices(data.choices, data.correctCount, data.isBonus);
-        updateUI();
-        showScreen(gameScreen);
-        updateRankings();
-    } catch (e) {
-        console.error('Failed to start game', e);
-    }
-}
-
-function updateUI() {
-    winCountDisplay.textContent = winCount;
-}
-
-function renderChoices(choices, correctCount, isBonus) {
-    choicesContainer.innerHTML = '';
-    quizInstruction.textContent = `${choices.length}個の中から正解（${correctCount}個）を1つ選んでください！`;
-
-    if (isBonus) {
-        bonusIndicator.classList.remove('hidden');
-    } else {
-        bonusIndicator.classList.add('hidden');
-    }
-
-    choices.forEach((emoji, index) => {
-        const btn = document.createElement('button');
-        btn.className = 'choice-btn';
-        btn.textContent = emoji;
-        btn.addEventListener('click', () => {
-            const checkUrl = `/check?sessionId=${sessionId}&choice=${index}`;
-            const checkWindow = window.open(checkUrl, '_blank');
-            if (!checkWindow || checkWindow.closed || typeof checkWindow.closed === 'undefined') {
-                window.location.href = checkUrl;
-            }
-        });
-        choicesContainer.appendChild(btn);
-    });
-}
-
-function showScreen(screen) {
+const showScreen = (screen) => {
     [startScreen, gameScreen, gameOverScreen].forEach(s => s.classList.add('hidden'));
     screen.classList.remove('hidden');
-}
+};
 
-window.addEventListener('message', (event) => {
-    if (event.data && event.data.type === 'quiz-result') {
-        const { correct, winCount: newWinCount, choices, correctCount, isBonus, score, token } = event.data;
-        if (correct) {
-            document.body.classList.add('correct-flash');
-            setTimeout(() => document.body.classList.remove('correct-flash'), 500);
-
-            winCount = newWinCount;
-            updateUI();
-            renderChoices(choices, correctCount, isBonus);
-        } else {
-            document.getElementById('app').classList.add('shake');
-            setTimeout(() => document.getElementById('app').classList.remove('shake'), 500);
-
-            finalScoreDisplay.textContent = score;
-
-            // Show email section if in top 5 (indicated by token)
-            if (token) {
-                tokenDisplay.classList.remove('hidden');
-                rankToken.textContent = token;
-                emailSection.classList.remove('hidden');
-            } else {
-                tokenDisplay.classList.add('hidden');
-                emailSection.classList.add('hidden');
-            }
-
-            showScreen(gameOverScreen);
-            updateRankings();
-        }
-    }
-});
-
-emailSubmitBtn.addEventListener('click', async () => {
-    const e1 = emailInput1.value.trim();
-    const e2 = emailInput2.value.trim();
-
-    if (!e1 || e1 !== e2) {
-        alert('メールアドレスが一致しません');
-        return;
-    }
-
+const updateRankings = async () => {
     try {
-        const response = await fetch('/api/register-email', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ nickname: currentNickname, email: e1 })
-        });
-        if (response.ok) {
-            alert('メールアドレスを登録しました');
-            emailSection.classList.add('hidden');
-        }
-    } catch (e) {
-        console.error('Email registration failed', e);
-    }
-});
+        const res = await fetch('/api/rankings');
+        const data = await res.json();
+        rankingList.innerHTML = data.map((r, i) => `
+            <div class="flex items-center justify-between px-6 py-4">
+                <div class="flex items-center gap-4">
+                    <span class="font-bold text-slate-300 w-4">${i + 1}</span>
+                    <span class="font-semibold text-slate-700">${r.nickname || 'Guest'}</span>
+                </div>
+                <span class="text-indigo-600 font-bold">${r.score} Wins</span>
+            </div>
+        `).join('') || '<p class="p-6 text-slate-400 text-center">No rankings yet</p>';
+    } catch (e) { console.error(e); }
+};
 
-// Handle fallback parameters on load
-window.addEventListener('load', () => {
-    sessionId = localStorage.getItem('sessionId');
-    currentNickname = localStorage.getItem('nickname') || '';
-    if (currentNickname) nicknameInput.value = currentNickname;
-    const params = new URLSearchParams(window.location.search);
-    if (params.has('winCount')) {
-        winCount = parseInt(params.get('winCount'));
-        updateUI();
-        if (params.has('choices')) {
-            renderChoices(
-                JSON.parse(params.get('choices')),
-                parseInt(params.get('correctCount')),
-                params.get('isBonus') === 'true'
-            );
-        }
-        showScreen(gameScreen);
-    }
-    updateRankings();
-});
-
-checkRankBtn.addEventListener('click', async () => {
+const startGame = async () => {
     const nickname = nicknameInput.value.trim();
     if (!nickname) {
-        alert('ニックネームを入力してください');
+        alert('Please enter a nickname');
+        return;
+    }
+    state.nickname = nickname;
+    localStorage.setItem('nickname', nickname);
+
+    const res = await fetch('/api/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nickname })
+    });
+
+    if (res.status === 403) {
+        const err = await res.json();
+        alert(err.message);
         return;
     }
 
-    try {
-        const response = await fetch(`/api/my-rank?nickname=${encodeURIComponent(nickname)}`);
-        const data = await response.json();
-        rankCheckResult.textContent = data.message;
-        rankCheckResult.classList.remove('hidden');
-    } catch (e) {
-        console.error('Failed to check rank', e);
+    const data = await res.json();
+    state.sessionId = data.sessionId;
+    state.winCount = data.winCount;
+    renderQuiz(data);
+    showScreen(gameScreen);
+};
+
+const renderQuiz = (data) => {
+    winCountDisplay.textContent = state.winCount;
+    quizInstruction.textContent = data.correctCount === 1 ? '正解を1つ選んでください' : `正解を${data.correctCount}つ選んでください`;
+
+    if (data.isBonus) bonusIndicator.classList.remove('hidden');
+    else bonusIndicator.classList.add('hidden');
+
+    choicesContainer.innerHTML = '';
+    data.choices.forEach((emoji, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'quiz-btn bg-white border-2 border-slate-100 hover:border-indigo-500 hover:bg-indigo-50 text-4xl p-6 rounded-2xl shadow-sm transition-all';
+        btn.textContent = emoji;
+        btn.onclick = () => {
+            const url = `/check?sessionId=${state.sessionId}&choice=${idx}`;
+            const win = window.open(url, '_blank');
+            if (!win) window.location.href = url;
+        };
+        choicesContainer.appendChild(btn);
+    });
+};
+
+// Listen for results
+window.addEventListener('message', (e) => {
+    if (e.data.type === 'quiz-result') {
+        if (e.data.correct) {
+            state.winCount = e.data.winCount;
+            renderQuiz(e.data);
+            document.body.classList.add('bg-emerald-50');
+            setTimeout(() => document.body.classList.remove('bg-emerald-50'), 300);
+        } else {
+            finalScoreDisplay.textContent = e.data.score;
+            if (e.data.token) {
+                registrationSection.classList.remove('hidden');
+            } else {
+                registrationSection.classList.add('hidden');
+            }
+            showScreen(gameOverScreen);
+            updateRankings();
+            document.body.classList.add('shake');
+            setTimeout(() => document.body.classList.remove('shake'), 500);
+        }
     }
 });
 
-adTrigger.addEventListener('click', () => {
-    // Restart game after clicking ad
+startBtn.onclick = async () => {
+    if (await checkEnvironment()) startGame();
+};
+
+modalContinue.onclick = () => {
+    blockModal.classList.add('hidden');
     startGame();
-});
+};
+
+retryBtn.onclick = () => startGame();
+
+shareBtn.onclick = () => {
+    const text = `【Infinite Master】で記録に挑戦中！現在のスコア：${state.winCount}連勝！ #InfiniteMaster #懸賞`;
+    const url = window.location.origin;
+    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`);
+};
+
+checkRankBtn.onclick = async () => {
+    const nick = nicknameInput.value.trim();
+    if (!nick) return alert('Enter nickname');
+    const res = await fetch(`/api/my-rank?nickname=${encodeURIComponent(nick)}`);
+    const data = await res.json();
+    rankCheckResult.textContent = data.message;
+    rankCheckResult.classList.remove('hidden');
+};
+
+registrationForm.onsubmit = async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('regEmail').value;
+    const res = await fetch('/api/register-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nickname: state.nickname, email })
+    });
+    if (res.ok) {
+        alert('Registered successfully!');
+        registrationSection.classList.add('hidden');
+    }
+};
+
+updateRankings();

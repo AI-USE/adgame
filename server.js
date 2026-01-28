@@ -21,6 +21,9 @@ let stats = {
     totalCorrect: 0,
     totalIncorrect: 0
 };
+let config = {
+    sponsorUrl: 'https://otieu.com/4/10530383'
+};
 
 function loadData() {
     if (fs.existsSync(DATA_FILE)) {
@@ -31,6 +34,7 @@ function loadData() {
             emails = data.emails || [];
             playerMetadata = data.playerMetadata || {};
             stats = data.stats || { totalPlays: 0, totalCorrect: 0, totalIncorrect: 0 };
+            config = data.config || { sponsorUrl: 'https://otieu.com/4/10530383' };
             console.log('Data loaded from persistence.');
         } catch (e) {
             console.error('Failed to load data:', e);
@@ -39,7 +43,7 @@ function loadData() {
 }
 
 function saveData() {
-    const data = { rankings, history, emails, playerMetadata, stats };
+    const data = { rankings, history, emails, playerMetadata, stats, config };
     fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
 }
 
@@ -271,7 +275,7 @@ app.get('/check', (req, res) => {
                             token: ${topToken ? `'${topToken}'` : 'null'}
                         }, '*');
                     }
-                    window.location.href = 'https://otieu.com/4/10530383';
+                    window.location.href = '${config.sponsorUrl}';
                 </script>
                 <p>不正解！広告に移動します...</p>
             </body>
@@ -291,12 +295,33 @@ const adminAuth = (req, res, next) => {
 };
 
 app.get('/api/admin/data', adminAuth, (req, res) => {
+    // Map emails to rankings for easier admin view
+    const rankingsWithEmails = rankings.map(r => {
+        const emailEntry = emails.find(e => e.nickname === r.nickname);
+        return {
+            ...r,
+            email: emailEntry ? emailEntry.email : null
+        };
+    });
+
     res.json({
         stats,
-        rankings,
+        rankings: rankingsWithEmails,
         history,
+        config,
         activeSessions: Object.keys(sessions).length
     });
+});
+
+app.post('/api/admin/config', adminAuth, (req, res) => {
+    const { sponsorUrl } = req.body;
+    if (sponsorUrl) {
+        config.sponsorUrl = sponsorUrl;
+        saveData();
+        res.json({ success: true, config });
+    } else {
+        res.status(400).json({ error: 'Missing sponsorUrl' });
+    }
 });
 
 app.get('/api/admin/emails', adminAuth, (req, res) => {

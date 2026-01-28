@@ -3,96 +3,162 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>無限マスターへの道</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Infinite Master - 無限マスターへの道</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .quiz-btn { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+        .quiz-btn:active { transform: scale(0.95); }
+        .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+    </style>
 </head>
-<body>
-    <div id="app">
-        <!-- Start Screen -->
-        <div id="start-screen" class="screen">
-            <h1>無限マスターへの道</h1>
-            <p>次々と現れる絵文字の中から正解を見つけ出し、無限の連勝を目指せ！</p>
+<body class="bg-slate-50 text-slate-900 font-sans min-h-screen flex flex-col">
 
-            <div class="registration">
-                <input type="text" id="nickname-input" placeholder="ニックネームを入力" maxlength="15">
-                <div class="registration-btns">
-                    <button id="start-btn">ゲーム開始</button>
-                    <button id="check-rank-btn" class="secondary-btn">順位を確認</button>
-                </div>
-                <p id="rank-check-result" class="rank-result hidden"></p>
+    <!-- Header Banner -->
+    <div class="bg-indigo-600 text-white py-2 px-4 text-center text-sm font-medium">
+        🏆 <span class="font-bold">Prize Pool: 7,000 JPY</span> - Event Ends Feb 4th!
+        <span class="opacity-80 ml-2">(Top 5 rankers will be notified via email after the event)</span>
+    </div>
+
+    <main class="flex-grow container mx-auto max-w-2xl px-4 py-8 flex flex-col items-center justify-center">
+
+        <!-- Start Screen -->
+        <div id="start-screen" class="w-full text-center space-y-8 animate-fade-in">
+            <div class="space-y-2">
+                <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900">
+                    Infinite Master
+                </h1>
+                <p class="text-slate-500 text-lg">次々と現れる絵文字の中から正解を見つけ出せ</p>
             </div>
 
-            <div class="event-info">
-                <h3>🏆 豪華賞品イベント開催中！</h3>
-                <p>期間：2026年2月4日まで</p>
-                <div class="prize-list">
-                    1位：3,000円 / 2位：2,000円 / 3位：1,000円<br>
-                    4位・5位：500円<br>
-                    <small>選べるギフトカード（Amazon, Apple, GooglePlay, etc...）</small>
+            <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 space-y-6">
+                <div class="space-y-4">
+                    <label for="nickname" class="block text-sm font-semibold text-slate-700 text-left ml-1">Nickname</label>
+                    <input type="text" id="nickname"
+                        class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                        placeholder="ニックネームを入力" maxlength="15">
+
+                    <button id="start-btn"
+                        class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 rounded-xl shadow-lg transition-all transform hover:-translate-y-0.5">
+                        ゲーム開始
+                    </button>
                 </div>
-                <p class="warning">※不正解時はゲームオーバーとなり、スポンサー広告が表示されます</p>
-                <p><small>上位入賞者には終了後にメールが送られます。</small></p>
+
+                <div class="pt-6 border-t border-slate-100 flex items-center justify-between gap-4">
+                    <button id="check-rank-btn" class="text-slate-600 hover:text-indigo-600 text-sm font-medium transition-colors">
+                        順位を確認する
+                    </button>
+                    <p id="rank-check-result" class="text-sm font-bold text-indigo-600 hidden"></p>
+                </div>
+            </div>
+
+            <div class="text-slate-400 text-xs space-y-1 italic">
+                <p>※不正解時はゲームオーバーとなり、スポンサー広告が表示されます</p>
+                <p>※広告リンク先での操作は自由です</p>
             </div>
         </div>
 
         <!-- Game Screen -->
-        <div id="game-screen" class="screen hidden">
-            <div id="bonus-indicator" class="bonus-indicator hidden">BONUS PLAY!</div>
-            <h1>無限マスターへの道</h1>
-            <div class="status">
-                現在の連勝数: <span id="win-count">0</span>
+        <div id="game-screen" class="hidden w-full space-y-8 text-center animate-fade-in">
+            <div class="flex justify-between items-center w-full px-2">
+                <div class="text-left">
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Score</p>
+                    <p class="text-3xl font-black text-slate-900" id="win-count">0</p>
+                </div>
+                <div id="bonus-indicator" class="hidden bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-xs font-bold animate-pulse">
+                    ✨ BONUS PLAY! ✨
+                </div>
             </div>
-            <div class="quiz-container">
-                <p id="quiz-instruction">選んでください。</p>
-                <div id="choices-container" class="choices">
+
+            <div class="bg-white p-8 md:p-12 rounded-3xl shadow-xl border border-slate-100 space-y-8 min-h-[300px] flex flex-col justify-center">
+                <h2 class="text-xl font-semibold text-slate-700" id="quiz-instruction">
+                    正解を1つ選んでください
+                </h2>
+
+                <div id="choices-container" class="grid grid-cols-2 md:grid-cols-3 gap-4">
                     <!-- Dynamic buttons -->
                 </div>
             </div>
-            <p class="small-warning">※不正解時はゲームオーバーとなり、スポンサー広告が表示されます</p>
         </div>
 
         <!-- Game Over Screen -->
-        <div id="game-over-screen" class="screen hidden">
-            <h1>GAME OVER</h1>
-            <p>SCORE: <span id="final-score">0</span></p>
-
-            <div id="email-section" class="hidden">
-                <p class="neon-green">🎉 ハイスコア達成！</p>
-                <p>賞品受け取り用のメールアドレスを登録してください。</p>
-                <input type="email" id="email-input-1" placeholder="メールアドレスを入力">
-                <input type="email" id="email-input-2" placeholder="メールアドレスを再入力">
-                <button id="email-submit-btn">登録する</button>
-                <p><small>※入力ミスにご注意ください。認証はありません。</small></p>
+        <div id="game-over-screen" class="hidden w-full space-y-8 text-center animate-scale-up">
+            <div class="space-y-2">
+                <h1 class="text-5xl font-black text-slate-900">Game Over</h1>
+                <p class="text-slate-500 text-xl">最終スコア: <span id="final-score" class="font-bold text-indigo-600 text-2xl">0</span></p>
             </div>
 
-            <div id="token-display" class="hidden">
-                <p>RANKING TOKEN:</p>
-                <code id="rank-token"></code>
-            </div>
-            <div id="ad-trigger" class="ad-trigger">
-                TRY AGAIN (AD)
-            </div>
-        </div>
-
-        <!-- Rankings Screen -->
-        <div id="rankings-container" class="ranking-section">
-            <h2>ランキング</h2>
-            <ul id="rankings-list"></ul>
-        </div>
-
-        <div class="footer-links">
-            <a href="terms.html">利用規約・プライバシーポリシー</a>
-        </div>
-
-        <!-- Block Warning Modal -->
-        <div id="block-modal" class="modal hidden">
-            <div class="modal-content">
-                <h2>環境チェック</h2>
-                <p id="block-message"></p>
-                <div class="modal-actions">
-                    <button id="modal-continue">続行</button>
-                    <button id="modal-howto">設定方法を見る</button>
+            <!-- Email Registration for Top Rankers -->
+            <div id="registration-section" class="hidden bg-emerald-50 border border-emerald-100 p-6 rounded-2xl space-y-4">
+                <div class="space-y-1">
+                    <p class="text-emerald-800 font-bold text-lg">🎉 ハイスコア達成！</p>
+                    <p class="text-emerald-600 text-sm">TOP 5 入賞の可能性があります。賞品受け取り用のメールアドレスを登録してください。</p>
                 </div>
+                <form id="registration-form" class="space-y-3">
+                    <input type="email" id="regEmail" required
+                        class="w-full px-4 py-3 rounded-xl border border-emerald-200 focus:ring-2 focus:ring-emerald-500 outline-none"
+                        placeholder="email@example.com">
+                    <button type="submit"
+                        class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition-colors">
+                        メールアドレスを登録
+                    </button>
+                </form>
+            </div>
+
+            <div class="flex flex-col gap-4">
+                <button id="retry-btn"
+                    class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-5 rounded-2xl shadow-lg transition-all transform hover:-translate-y-0.5">
+                    もう一度挑戦する (AD)
+                </button>
+                <button id="share-btn"
+                    class="w-full bg-sky-500 hover:bg-sky-600 text-white font-bold py-4 rounded-2xl transition-colors">
+                    Twitterでシェア
+                </button>
+            </div>
+        </div>
+
+        <!-- Ranking Table -->
+        <div id="ranking-container" class="w-full mt-16 bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+            <div class="bg-slate-50 px-6 py-4 border-b border-slate-200">
+                <h3 class="font-bold text-slate-800 flex items-center gap-2">
+                    📊 Leaderboard <span class="text-xs font-normal text-slate-400">Top 5 Only</span>
+                </h3>
+            </div>
+            <div class="divide-y divide-slate-100" id="ranking-list">
+                <!-- Ranking items -->
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="py-8 text-center text-slate-400 text-sm border-t border-slate-100 bg-white mt-12">
+        <div class="container mx-auto px-4 space-x-4">
+            <a href="terms.html" class="hover:text-slate-600 underline">利用規約</a>
+            <span>&copy; 2026 Infinite Master</span>
+        </div>
+    </footer>
+
+    <!-- AdBlock Warning Modal -->
+    <div id="block-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl max-w-md w-full p-8 shadow-2xl space-y-6">
+            <div class="text-center space-y-2">
+                <h2 class="text-2xl font-bold text-slate-900">環境チェック</h2>
+                <p id="block-message" class="text-slate-500"></p>
+            </div>
+            <div class="flex flex-col gap-3">
+                <button id="modal-continue" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl transition-colors">
+                    設定を無視して続行
+                </button>
+                <button id="modal-howto" class="text-slate-400 text-sm hover:text-slate-600">
+                    設定方法を見る
+                </button>
             </div>
         </div>
     </div>
