@@ -21,10 +21,10 @@
 このゲームはランキングやセッション情報を保存するために Cloudflare KV を使用します。
 
 1. Cloudflare ダッシュボードで「Workers & Pages」->「KV」を選択します。
-2. 「Create a namespace」をクリックし、名前を `MIN_KV`（または任意）にして作成します。
+2. 「Create a namespace」をクリックし、名前を `KV`（または任意）にして作成します。
 3. 作成した Pages プロジェクトの設定（Settings）->「Functions」->「KV namespace bindings」に進みます。
 4. 「Production」および「Preview」の両方で以下の設定を追加します：
-   - **Variable name**: `MIN_KV`
+   - **Variable name**: `KV`
    - **KV namespace**: 先ほど作成したネームスペースを選択
 5. 保存します。
 

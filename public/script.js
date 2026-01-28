@@ -142,7 +142,7 @@ if (savedWaitFinish > Date.now()) {
     waitInterval = setInterval(updateWaitTick, 100);
 }
 
-async function checkEnvironment() {
+function checkEnvironment() {
     // AdBlock Check
     const bait = document.getElementById('ad-bait');
     let adBlockEnabled = false;
@@ -151,12 +151,16 @@ async function checkEnvironment() {
     }
 
     // Popup Check
-    const popup = window.open('about:blank', '_blank', 'width=1,height=1');
     let popupBlockEnabled = false;
-    if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+    try {
+        const popup = window.open('about:blank', '_blank', 'width=1,height=1');
+        if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+            popupBlockEnabled = true;
+        } else {
+            popup.close();
+        }
+    } catch (e) {
         popupBlockEnabled = true;
-    } else {
-        popup.close();
     }
 
     if (adBlockEnabled || popupBlockEnabled) {
@@ -200,24 +204,34 @@ const startGame = async () => {
     state.nickname = nickname;
     localStorage.setItem('nickname', nickname);
 
-    const res = await fetch('/api/start', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nickname })
-    });
+    try {
+        const res = await fetch('/api/start', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nickname })
+        });
 
-    if (res.status === 403) {
-        const err = await res.json();
-        alert(err.message);
-        return;
+        if (!res.ok) {
+            if (res.status === 403) {
+                const err = await res.json();
+                alert(err.message);
+                return;
+            }
+            throw new Error(`Server error: ${res.status}`);
+        }
+
+        const data = await res.json();
+        if (!data.sessionId) throw new Error('Session ID not received');
+
+        state.sessionId = data.sessionId;
+        localStorage.setItem('lastSessionId', data.sessionId);
+        state.winCount = data.winCount;
+        renderQuiz(data);
+        showScreen(gameScreen);
+    } catch (err) {
+        console.error('Failed to start game:', err);
+        alert('ゲームの開始に失敗しました。しばらく時間を置いてから再度お試しください。');
     }
-
-    const data = await res.json();
-    state.sessionId = data.sessionId;
-    localStorage.setItem('lastSessionId', data.sessionId);
-    state.winCount = data.winCount;
-    renderQuiz(data);
-    showScreen(gameScreen);
 };
 
 const renderQuiz = (data) => {
@@ -280,8 +294,8 @@ window.addEventListener('message', (e) => {
     }
 });
 
-startBtn.onclick = async () => {
-    if (await checkEnvironment()) startGame();
+startBtn.onclick = () => {
+    if (checkEnvironment()) startGame();
 };
 
 modalContinue.onclick = () => {

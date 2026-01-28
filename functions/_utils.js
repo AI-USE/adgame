@@ -1,4 +1,4 @@
-export const EMOJIS = ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐻‍❄️', '🐨', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵', '🐔', '🐧', '🐦', '🐤', '🐣', '🐥', '🦆', '🦅', '🦉', '🦇', '🐺', '🐗', '🐴', '🦄', '🐝', '🪱', '🐛', '🦋', '🐌', '🐞', '🐜', '🪰', '🪲', '🪳', '🦟', '🦗', '🕷', '🕸', '🦂', '🐢', '🐍', '🦎', '🦖', '🦕', '🐙', '🦑', '🦐', '🦞', '🦀', '🐡', '🐠', '🐟', '🐬', '🐳', '🐋', '🦈', '🐊', '🐅', '🐆', '🦓', '🦍', '🦧', '🦣', '🐘', '🦛', '🦏', '🐪', '🐫', '🦒', '🦘', '🦬', '🐃', '🐂', '🐄', '🐎', '🐖', 'ラム', '羊', '🦙', '山羊', '鹿', '犬', 'プードル', '介助犬', '猫', '黒猫', '雄鶏', '七面鳥', 'ドードー', '孔雀', 'インコ', '白鳥', 'フラミンゴ', '鳩', '兎', 'アライグマ', 'スカンク', '穴熊', 'カワウソ', 'ビーバー', 'ナマケモノ', '二十日鼠', '鼠', '栗鼠', '針鼠'];
+export const EMOJIS = ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐻‍❄️', '🐨', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵', '🐔', '🐧', '🐦', '🐤', '🐣', '🐥', '🦆', '🦅', '🦉', '🦇', '🐺', '🐗', '🐴', '🦄', '🐝', '🪱', '🐛', '🦋', '🐌', '🐞', '🐜', '🪰', '🪲', '🪳', '🦟', '🦗', '🕷', '🕸', '🦂', '🐢', '🐍', '🦎', '🦖', '🦕', '🐙', '🦑', '🦐', '🦞', '🦀', '🐡', '🐠', '🐟', '🐬', '🐳', '🐋', '🦈', '🐊', '🐅', '🐆', '🦓', '🦍', '🦧', '🦣', '🐘', '🦛', '🦏', '🐪', '🐫', '🦒', '🦘', '🦬', '🐃', '🐂', '🐄', '🐎', '🐖', '🐑', '🐐', '🦌', '🐩', '🐕', '🐈', '🐈‍⬛', '🐓', '🦃', '🦤', '🦚', '🦜', '🦢', '🦩', '🕊', '🐇', '🦝', '🦨', '🦡', '🦦', '🦫', '🦥', '🐁', '🐀', '🐿', '🦔'];
 
 export function getRandomEmojis(count) {
     const shuffled = [...EMOJIS].sort(() => 0.5 - Math.random());
@@ -25,10 +25,10 @@ export function generateDifficulty(winCount = 0, bonusMissRate = null, winProb =
 }
 
 export async function getStorage(env) {
-    if (!env.MIN_KV) {
-        throw new Error('KV namespace "MIN_KV" is not bound. Please check your wrangler.toml and Cloudflare dashboard settings.');
+    if (!env.KV) {
+        throw new Error('KV namespace "KV" is not bound. Please check your wrangler.toml and Cloudflare dashboard settings.');
     }
-    const data = await env.MIN_KV.get('game_data', 'json') || {};
+    const data = await env.KV.get('game_data', 'json') || {};
     return {
         rankings: data.rankings || [],
         history: data.history || [],
@@ -40,21 +40,21 @@ export async function getStorage(env) {
 }
 
 export async function saveStorage(env, data) {
-    if (!env.MIN_KV) return;
-    await env.MIN_KV.put('game_data', JSON.stringify(data));
+    if (!env.KV) return;
+    await env.KV.put('game_data', JSON.stringify(data));
 }
 
 export async function getSession(env, sessionId) {
-    if (!env.MIN_KV) return null;
-    return await env.MIN_KV.get(`session:${sessionId}`, 'json');
+    if (!env.KV) return null;
+    return await env.KV.get(`session:${sessionId}`, 'json');
 }
 
 export async function saveSession(env, sessionId, sessionData) {
-    if (!env.MIN_KV) return;
-    await env.MIN_KV.put(`session:${sessionId}`, JSON.stringify(sessionData), { expirationTtl: 3600 });
+    if (!env.KV) return;
+    await env.KV.put(`session:${sessionId}`, JSON.stringify(sessionData), { expirationTtl: 3600 });
 }
 
 export async function deleteSession(env, sessionId) {
-    if (!env.MIN_KV) return;
-    await env.MIN_KV.delete(`session:${sessionId}`);
+    if (!env.KV) return;
+    await env.KV.delete(`session:${sessionId}`);
 }
