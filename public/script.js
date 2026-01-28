@@ -16,6 +16,7 @@ const blockModal = document.getElementById('block-modal');
 const blockMessage = document.getElementById('block-message');
 
 const winCountDisplay = document.getElementById('win-count');
+let popupBlockDetected = false;
 
 // Environment Check
 async function checkEnvironment() {
@@ -32,14 +33,19 @@ async function checkEnvironment() {
     const popup = window.open('about:blank', '_blank', 'width=100,height=100');
     if (!popup || popup.closed || typeof popup.closed === 'undefined') {
         popupBlockEnabled = true;
+        popupBlockDetected = true;
     } else {
         popup.close();
+        popupBlockDetected = false;
     }
 
     if (adBlockEnabled || popupBlockEnabled) {
         let message = '快適なプレイのために以下の設定を確認してください：<br><br>';
         if (adBlockEnabled) message += '・広告ブロックが有効です<br>';
-        if (popupBlockEnabled) message += '・ポップアップブロックが有効です<br>';
+        if (popupBlockEnabled) {
+            message += '・ポップアップブロックが有効です<br>';
+            message += '<small>※ブロックされた場合、不正解時に画面が切り替わります</small><br>';
+        }
         blockMessage.innerHTML = message;
         blockModal.classList.remove('hidden');
         return false;
@@ -110,9 +116,16 @@ choiceBtns.forEach(btn => {
                 document.getElementById('app').classList.add('shake');
                 setTimeout(() => document.getElementById('app').classList.remove('shake'), 500);
 
+                const adUrl = 'https://otieu.com/4/10530383';
                 // Immediate ad trigger on wrong choice
-                window.open('https://otieu.com/4/10530383', '_blank');
-                setTimeout(() => showScreen(gameOverScreen), 500);
+                const adWindow = window.open(adUrl, '_blank');
+
+                // If blocked or previously detected, fallback to redirect
+                if (!adWindow || adWindow.closed || typeof adWindow.closed === 'undefined') {
+                    window.location.href = adUrl;
+                } else {
+                    setTimeout(() => showScreen(gameOverScreen), 500);
+                }
             }
         } catch (e) {
             console.error('Choice failed', e);
