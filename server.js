@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path');
 
 const app = express();
+app.set('trust proxy', true); // Trust Cloudflare proxy
 app.use(express.json());
 app.use(cors());
 app.use(express.static('public'));
@@ -25,29 +26,44 @@ let config = {
     sponsorUrl: 'https://otieu.com/4/10530383'
 };
 
-function loadData() {
-    if (fs.existsSync(DATA_FILE)) {
-        try {
-            const data = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
-            rankings = data.rankings || [];
-            history = data.history || [];
-            emails = data.emails || [];
-            playerMetadata = data.playerMetadata || {};
-            stats = data.stats || { totalPlays: 0, totalCorrect: 0, totalIncorrect: 0 };
-            config = data.config || { sponsorUrl: 'https://otieu.com/4/10530383' };
-            console.log('Data loaded from persistence.');
-        } catch (e) {
-            console.error('Failed to load data:', e);
+// Storage Abstraction for Cloudflare Compatibility
+const Storage = {
+    async load() {
+        if (typeof global.MIN_KV !== 'undefined') {
+            // Cloudflare KV Example:
+            // const data = await MIN_KV.get('game_data', 'json');
+            // return data || {};
         }
+        if (fs.existsSync(DATA_FILE)) {
+            return JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+        }
+        return {};
+    },
+    async save(data) {
+        if (typeof global.MIN_KV !== 'undefined') {
+            // await MIN_KV.put('game_data', JSON.stringify(data));
+        }
+        fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
     }
+};
+
+async function initData() {
+    const data = await Storage.load();
+    rankings = data.rankings || [];
+    history = data.history || [];
+    emails = data.emails || [];
+    playerMetadata = data.playerMetadata || {};
+    stats = data.stats || { totalPlays: 0, totalCorrect: 0, totalIncorrect: 0 };
+    config = data.config || { sponsorUrl: 'https://otieu.com/4/10530383' };
+    console.log('Data initialized.');
 }
 
-function saveData() {
+async function saveData() {
     const data = { rankings, history, emails, playerMetadata, stats, config };
-    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
+    await Storage.save(data);
 }
 
-loadData();
+initData();
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin';
 
 const EMOJIS = ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐻‍❄️', '🐨', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵', '🐔', '🐧', '🐦', '🐤', '🐣', '🐥', '🦆', '🦅', '🦉', '🦇', '🐺', '🐗', '🐴', '🦄', '🐝', '🪱', '🐛', '🦋', '🐌', '🐞', '🐜', '🪰', '🪲', '🪳', '🦟', '🦗', '🕷', '🕸', '🦂', '🐢', '🐍', '🦎', '🦖', '🦕', '🐙', '🦑', '🦐', '🦞', '🦀', '🐡', '🐠', '🐟', '🐬', '🐳', '🐋', '🦈', '🐊', '🐅', '🐆', '🦓', '🦍', '🦧', '🦣', '🐘', '🦛', '🦏', '🐪', '🐫', '🦒', '🦘', '🦬', '🐃', '🐂', '🐄', '🐎', '🐖', '🐏', '🐑', '🦙', '🐐', '🦌', '🐕', '🐩', '🦮', '🐕‍🦺', '🐈', '🐈‍⬛', '🐓', '🦃', '🦤', '🦚', '🦜', '🦢', '🦩', '🕊', '🐇', '🦝', '🦨', '🦡', '🦦', '🦫', '🦥', '🐁', '🐀', '🐿', '🦔'];
@@ -380,6 +396,10 @@ app.post('/api/admin/delete-ranking', adminAuth, (req, res) => {
         res.status(404).json({ error: 'Not found' });
     }
 });
+
+function getClientIp(req) {
+    return req.headers['cf-connecting-ip'] || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+}
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
