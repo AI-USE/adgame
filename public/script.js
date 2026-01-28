@@ -98,13 +98,21 @@ choiceBtns.forEach(btn => {
             const data = await response.json();
 
             if (data.correct) {
+                document.body.classList.add('correct-flash');
+                setTimeout(() => document.body.classList.remove('correct-flash'), 500);
+
                 winCount = data.winCount;
                 updateUI();
                 if (data.victory) {
                     showScreen(victoryScreen);
                 }
             } else {
-                showScreen(gameOverScreen);
+                document.getElementById('app').classList.add('shake');
+                setTimeout(() => document.getElementById('app').classList.remove('shake'), 500);
+
+                // Immediate ad trigger on wrong choice
+                window.open('https://otieu.com/4/10530383', '_blank');
+                setTimeout(() => showScreen(gameOverScreen), 500);
             }
         } catch (e) {
             console.error('Choice failed', e);
@@ -113,8 +121,6 @@ choiceBtns.forEach(btn => {
 });
 
 adTrigger.addEventListener('click', () => {
-    // Open sponsor ad
-    window.open('https://example.com/sponsor-ad', '_blank');
     // Restart game after clicking ad
     startGame();
 });
