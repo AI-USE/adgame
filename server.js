@@ -25,16 +25,31 @@ function getRandomEmojis(count) {
     return shuffled.slice(0, count);
 }
 
-function generateDifficulty(winCount = 0) {
-    // Progressive difficulty: more choices as winCount increases
-    // 0-2: 2, 3-5: 3, 6-8: 4, 9-11: 5, 12+: 6
-    const totalCount = Math.min(6, 2 + Math.floor(winCount / 3));
+function generateDifficulty(winCount = 0, bonusMissRate = null) {
+    let totalCount, correctCount;
 
-    // Number of correct answers can also increase or stay 1
-    // Let's make it usually 1, but sometimes 2 if totalCount > 3
-    let correctCount = 1;
-    if (totalCount > 3 && Math.random() > 0.7) {
-        correctCount = 2;
+    if (bonusMissRate !== null) {
+        // Bonus Play: fixed miss rate between 10-70%
+        // Win rate = 1 - bonusMissRate (0.3 to 0.9)
+        totalCount = 10;
+        correctCount = Math.round(totalCount * (1 - bonusMissRate));
+        correctCount = Math.max(1, Math.min(9, correctCount));
+    } else {
+        // Normal Progressive Difficulty
+        // Base buttons: 2 + floor(winCount/5)
+        let base = 2 + Math.floor(winCount / 5);
+
+        // Random fluctuation: 10% chance easier, 20% chance harder
+        const rand = Math.random();
+        if (rand < 0.1) base -= 1;
+        else if (rand < 0.3) base += 1;
+
+        totalCount = Math.max(2, Math.min(6, base));
+        correctCount = 1;
+        // Occasionally 2 correct if buttons > 4
+        if (totalCount > 4 && Math.random() > 0.8) {
+            correctCount = 2;
+        }
     }
 
     const emojis = getRandomEmojis(totalCount);
@@ -66,7 +81,7 @@ app.post('/api/start', (req, res) => {
         nickname: nickname || 'Guest',
         winCount: 0,
         ...diff,
-        hintUsed: false,
+        bonusChance: 0.01,
         lastSeen: Date.now()
     };
     stats.totalPlays += 1;
@@ -74,7 +89,8 @@ app.post('/api/start', (req, res) => {
         sessionId,
         winCount: 0,
         choices: diff.emojis,
-        correctCount: diff.correctCount
+        correctCount: diff.correctCount,
+        isBonus: false
     });
 });
 
@@ -93,13 +109,21 @@ app.get('/check', (req, res) => {
     if (isCorrect) {
         session.winCount += 1;
         stats.totalCorrect += 1;
+        session.bonusChance += 0.01;
         const currentWinCount = session.winCount;
 
-        const nextDiff = generateDifficulty(currentWinCount);
+        let bonusMissRate = null;
+        let isBonus = false;
+        if (Math.random() < session.bonusChance) {
+            bonusMissRate = Math.random() * 0.6 + 0.1; // 10% to 70% miss
+            session.bonusChance = 0.01;
+            isBonus = true;
+        }
+
+        const nextDiff = generateDifficulty(currentWinCount, bonusMissRate);
         session.emojis = nextDiff.emojis;
         session.correctIndices = nextDiff.correctIndices;
         session.correctCount = nextDiff.correctCount;
-        session.hintUsed = false;
 
         res.send(`
             <!DOCTYPE html>
@@ -111,7 +135,8 @@ app.get('/check', (req, res) => {
                         correct: true,
                         winCount: ${currentWinCount},
                         choices: ${JSON.stringify(nextDiff.emojis)},
-                        correctCount: ${nextDiff.correctCount}
+                        correctCount: ${nextDiff.correctCount},
+                        isBonus: ${isBonus}
                     };
                     if (window.opener) {
                         window.opener.postMessage(data, '*');
@@ -121,7 +146,8 @@ app.get('/check', (req, res) => {
                             correct: 'true',
                             winCount: currentWinCount,
                             choices: JSON.stringify(data.choices),
-                            correctCount: data.correctCount
+                            correctCount: data.correctCount,
+                            isBonus: data.isBonus
                         });
                         window.location.href = '/?' + params.toString();
                     }
@@ -152,7 +178,8 @@ app.get('/check', (req, res) => {
 
                 const rankingEntry = { ...historyEntry, nickname };
                 rankings.push(rankingEntry);
-                rankings.sort((a, b) => b.score - a.score);
+                // Sort by score DESC, then date ASC (earlier is better)
+                rankings.sort((a, b) => b.score - a.score || new Date(a.date) - new Date(b.date));
                 if (rankings.length > 100) rankings.pop();
 
                 const newRank = rankings.findIndex(r => r.id === rankingEntry.id);
@@ -199,8 +226,13 @@ app.get('/api/admin/data', adminAuth, (req, res) => {
     res.json({
         stats,
         rankings,
-        history
+        history,
+        activeSessions: Object.keys(sessions).length
     });
+});
+
+app.get('/api/admin/emails', adminAuth, (req, res) => {
+    res.json(emails);
 });
 
 app.post('/api/admin/add-dummy', adminAuth, (req, res) => {
@@ -212,7 +244,7 @@ app.post('/api/admin/add-dummy', adminAuth, (req, res) => {
         nickname: 'DummyPlayer'
     };
     rankings.push(rankingEntry);
-    rankings.sort((a, b) => b.score - a.score);
+    rankings.sort((a, b) => b.score - a.score || new Date(a.date) - new Date(b.date));
     if (rankings.length > 100) rankings.pop();
     res.json({ success: true });
 });
@@ -228,24 +260,7 @@ app.post('/api/register-email', (req, res) => {
     res.json({ success: true });
 });
 
-app.post('/api/hint', (req, res) => {
-    const { sessionId } = req.body;
-    const session = sessions[sessionId];
-
-    if (!session) {
-        return res.status(400).json({ error: 'Invalid session' });
-    }
-
-    if (session.hintUsed) {
-        return res.status(400).json({ error: 'Hint already used this round' });
-    }
-
-    const randomIndex = Math.floor(Math.random() * session.correctIndices.length);
-    const hintIndex = session.correctIndices[randomIndex];
-    session.hintUsed = true;
-
-    res.json({ hintIndex });
-});
+// Hint API removed as requested
 
 app.post('/api/admin/delete-ranking', adminAuth, (req, res) => {
     const { id } = req.body;

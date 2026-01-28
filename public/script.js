@@ -15,7 +15,7 @@ const blockMessage = document.getElementById('block-message');
 const winCountDisplay = document.getElementById('win-count');
 const choicesContainer = document.getElementById('choices-container');
 const quizInstruction = document.getElementById('quiz-instruction');
-const hintBtn = document.getElementById('hint-btn');
+const bonusIndicator = document.getElementById('bonus-indicator');
 const rankingsList = document.getElementById('rankings-list');
 const finalScoreDisplay = document.getElementById('final-score');
 const tokenDisplay = document.getElementById('token-display');
@@ -120,7 +120,7 @@ async function startGame() {
         sessionId = data.sessionId;
         localStorage.setItem('sessionId', sessionId);
         winCount = data.winCount;
-        renderChoices(data.choices, data.correctCount);
+        renderChoices(data.choices, data.correctCount, data.isBonus);
         updateUI();
         showScreen(gameScreen);
         updateRankings();
@@ -133,10 +133,15 @@ function updateUI() {
     winCountDisplay.textContent = winCount;
 }
 
-function renderChoices(choices, correctCount) {
+function renderChoices(choices, correctCount, isBonus) {
     choicesContainer.innerHTML = '';
     quizInstruction.textContent = `${choices.length}個の中から正解（${correctCount}個）を1つ選んでください！`;
-    hintBtn.disabled = false;
+
+    if (isBonus) {
+        bonusIndicator.classList.remove('hidden');
+    } else {
+        bonusIndicator.classList.add('hidden');
+    }
 
     choices.forEach((emoji, index) => {
         const btn = document.createElement('button');
@@ -160,14 +165,14 @@ function showScreen(screen) {
 
 window.addEventListener('message', (event) => {
     if (event.data && event.data.type === 'quiz-result') {
-        const { correct, winCount: newWinCount, choices, correctCount, score, token } = event.data;
+        const { correct, winCount: newWinCount, choices, correctCount, isBonus, score, token } = event.data;
         if (correct) {
             document.body.classList.add('correct-flash');
             setTimeout(() => document.body.classList.remove('correct-flash'), 500);
 
             winCount = newWinCount;
             updateUI();
-            renderChoices(choices, correctCount);
+            renderChoices(choices, correctCount, isBonus);
         } else {
             document.getElementById('app').classList.add('shake');
             setTimeout(() => document.getElementById('app').classList.remove('shake'), 500);
@@ -224,29 +229,15 @@ window.addEventListener('load', () => {
         winCount = parseInt(params.get('winCount'));
         updateUI();
         if (params.has('choices')) {
-            renderChoices(JSON.parse(params.get('choices')), parseInt(params.get('correctCount')));
+            renderChoices(
+                JSON.parse(params.get('choices')),
+                parseInt(params.get('correctCount')),
+                params.get('isBonus') === 'true'
+            );
         }
         showScreen(gameScreen);
     }
     updateRankings();
-});
-
-hintBtn.addEventListener('click', async () => {
-    try {
-        const response = await fetch('/api/hint', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sessionId })
-        });
-        const data = await response.json();
-        if (data.hintIndex !== undefined) {
-            const buttons = choicesContainer.querySelectorAll('.choice-btn');
-            buttons[data.hintIndex].classList.add('hint-highlight');
-            hintBtn.disabled = true;
-        }
-    } catch (e) {
-        console.error('Hint failed', e);
-    }
 });
 
 adTrigger.addEventListener('click', () => {

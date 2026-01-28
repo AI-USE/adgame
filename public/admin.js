@@ -36,6 +36,7 @@ function updateUI(data) {
     document.getElementById('total-plays').textContent = data.stats.totalPlays;
     document.getElementById('total-correct').textContent = data.stats.totalCorrect;
     document.getElementById('total-incorrect').textContent = data.stats.totalIncorrect;
+    document.getElementById('active-sessions').textContent = data.activeSessions || 0;
 
     const rankingBody = document.querySelector('#ranking-table tbody');
     rankingBody.innerHTML = '';
@@ -79,6 +80,34 @@ function updateUI(data) {
         historyBody.appendChild(tr);
     });
 }
+
+async function refreshEmails() {
+    try {
+        const response = await fetch('/api/admin/emails', {
+            headers: { 'x-admin-password': adminPassword }
+        });
+        if (!response.ok) return;
+        const data = await response.json();
+
+        const emailBody = document.querySelector('#email-table tbody');
+        emailBody.innerHTML = '';
+        data.forEach(e => {
+            const tr = document.createElement('tr');
+            const nickTd = document.createElement('td');
+            nickTd.textContent = e.nickname;
+            const emailTd = document.createElement('td');
+            emailTd.textContent = e.email;
+            const dateTd = document.createElement('td');
+            dateTd.textContent = new Date(e.date).toLocaleString();
+            tr.append(nickTd, emailTd, dateTd);
+            emailBody.appendChild(tr);
+        });
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+document.getElementById('refresh-emails-btn').addEventListener('click', refreshEmails);
 
 window.deleteRanking = async (id) => {
     if (!confirm('削除しますか？')) return;

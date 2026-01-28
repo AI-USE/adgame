@@ -103,6 +103,10 @@
                 <div>総不正解数</div>
                 <div class="stat-value" id="total-incorrect">0</div>
             </div>
+            <div class="stat-card">
+                <div>アクティブセッション</div>
+                <div class="stat-value" id="active-sessions">0</div>
+            </div>
         </div>
 
         <div class="dummy-form">
@@ -132,6 +136,19 @@
                     <th>ID</th>
                     <th>スコア</th>
                     <th>日付</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+        <h2>登録メールアドレス一覧</h2>
+        <button id="refresh-emails-btn">メールアドレス一覧を更新</button>
+        <table id="email-table">
+            <thead>
+                <tr>
+                    <th>ニックネーム</th>
+                    <th>メールアドレス</th>
+                    <th>登録日</th>
                 </tr>
             </thead>
             <tbody></tbody>

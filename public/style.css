@@ -66,6 +66,27 @@ h2 {
     font-weight: bold;
     color: var(--neon-purple);
     text-shadow: 0 0 5px var(--neon-purple);
+    margin-bottom: 1rem;
+}
+
+.bonus-indicator {
+    background: linear-gradient(45deg, var(--neon-pink), var(--neon-purple));
+    color: white;
+    padding: 0.5rem 1.2rem;
+    border-radius: 20px;
+    font-weight: bold;
+    font-size: 1.1rem;
+    display: inline-block;
+    margin-bottom: 1rem;
+    animation: bonusPulse 1s infinite alternate;
+    text-shadow: 0 0 8px white;
+    box-shadow: 0 0 20px var(--neon-pink);
+    border: 1px solid white;
+}
+
+@keyframes bonusPulse {
+    from { transform: scale(1); box-shadow: 0 0 10px var(--neon-pink); }
+    to { transform: scale(1.1); box-shadow: 0 0 25px var(--neon-pink); }
 }
 
 .choices {
@@ -186,6 +207,24 @@ h2 {
     margin-top: 2rem;
     padding-top: 1.5rem;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.footer-links {
+    margin-top: 2rem;
+    padding-bottom: 1rem;
+}
+
+.footer-links a {
+    color: var(--neon-blue);
+    text-decoration: none;
+    font-size: 0.75rem;
+    opacity: 0.6;
+    transition: opacity 0.3s;
+}
+
+.footer-links a:hover {
+    opacity: 1;
+    text-decoration: underline;
 }
 
 #rankings-list {

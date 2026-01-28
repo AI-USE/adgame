@@ -33,6 +33,7 @@
 
         <!-- Game Screen -->
         <div id="game-screen" class="screen hidden">
+            <div id="bonus-indicator" class="bonus-indicator hidden">BONUS PLAY!</div>
             <h1>無限マスターへの道</h1>
             <div class="status">
                 現在の連勝数: <span id="win-count">0</span>
@@ -41,9 +42,6 @@
                 <p id="quiz-instruction">選んでください。</p>
                 <div id="choices-container" class="choices">
                     <!-- Dynamic buttons -->
-                </div>
-                <div class="hint-container">
-                    <button id="hint-btn">💡 ヒントを使う</button>
                 </div>
             </div>
             <p class="small-warning">※不正解時はゲームオーバーとなり、スポンサー広告が表示されます</p>
@@ -76,6 +74,10 @@
         <div id="rankings-container" class="ranking-section">
             <h2>ランキング</h2>
             <ul id="rankings-list"></ul>
+        </div>
+
+        <div class="footer-links">
+            <a href="terms.html">利用規約・プライバシーポリシー</a>
         </div>
 
         <!-- Block Warning Modal -->
