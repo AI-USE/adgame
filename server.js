@@ -125,30 +125,38 @@ app.get('/api/my-rank', (req, res) => {
 app.post('/api/start', (req, res) => {
     const { nickname } = req.body;
 
-    // Daily Limit Check
+    const sessionId = uuidv4();
+    let winProb = 100;
+    let isBonus = false;
+    let bonusChance = 0.01;
+
     if (nickname) {
+        if (!playerMetadata[nickname]) playerMetadata[nickname] = { cumulativeBonusChance: 0.01 };
         const meta = playerMetadata[nickname];
-        if (meta && meta.lastBonusDate) {
-            const lastDate = new Date(meta.lastBonusDate).toDateString();
-            const today = new Date().toDateString();
-            if (lastDate === today) {
-                return res.status(403).json({
-                    error: 'Daily Limit',
-                    message: '本日のボーナスプレーは既に終了しました。また明日挑戦してください！'
-                });
-            }
+
+        // Increase chance at start of play
+        meta.cumulativeBonusChance = (meta.cumulativeBonusChance || 0.01) + 0.02; // 2% increase per play
+        bonusChance = meta.cumulativeBonusChance;
+
+        // Lottery
+        const canHaveBonus = !meta.lastBonusDate || (new Date(meta.lastBonusDate).toDateString() !== new Date().toDateString());
+
+        if (canHaveBonus && Math.random() < meta.cumulativeBonusChance) {
+            isBonus = true;
+            winProb = Math.floor(Math.random() * (95 - 70 + 1)) + 70; // 70-95%
+            meta.cumulativeBonusChance = 0.01; // Reset
+            meta.lastBonusDate = new Date();
         }
     }
 
-    const sessionId = uuidv4();
-    const winProb = 100;
     const diff = generateDifficulty(0, null, winProb);
     sessions[sessionId] = {
         nickname: nickname || 'ゲスト',
         winCount: 0,
         winProb: winProb,
+        isBonus: isBonus,
         ...diff,
-        bonusChance: 0.01,
+        bonusChance: bonusChance,
         lastSeen: Date.now()
     };
     stats.totalPlays += 1;
@@ -157,10 +165,10 @@ app.post('/api/start', (req, res) => {
         sessionId,
         winCount: 0,
         winProb: winProb,
-        bonusChance: 0.01,
+        bonusChance: bonusChance,
         choices: diff.emojis,
         correctCount: diff.correctCount,
-        isBonus: false
+        isBonus: isBonus
     });
 });
 
@@ -179,34 +187,21 @@ app.get('/check', (req, res) => {
     if (isCorrect) {
         session.winCount += 1;
         stats.totalCorrect += 1;
-        session.bonusChance += 0.02; // Increased by 2%
 
-        // Update winProb: random decrease 1-5, 5% chance of 0. min 15.
-        if (Math.random() >= 0.05) {
-            const decrease = Math.floor(Math.random() * 5) + 1;
-            session.winProb = Math.max(15, session.winProb - decrease);
+        // Update winProb: if NOT bonus, random decrease 1-5, 5% chance of 0. min 15.
+        if (!session.isBonus) {
+            if (Math.random() >= 0.05) {
+                const decrease = Math.floor(Math.random() * 5) + 1;
+                session.winProb = Math.max(15, session.winProb - decrease);
+            }
         }
 
         const currentWinCount = session.winCount;
         const currentWinProb = session.winProb;
 
-        let bonusMissRate = null;
-        let isBonus = false;
-        if (Math.random() < session.bonusChance) {
-            bonusMissRate = Math.random() * 0.6 + 0.1;
-            session.bonusChance = 0.01;
-            isBonus = true;
-        }
-
-        if (isBonus) {
-            const nickname = session.nickname;
-            if (!playerMetadata[nickname]) playerMetadata[nickname] = {};
-            playerMetadata[nickname].lastBonusDate = new Date();
-        }
-
         saveData();
 
-        const nextDiff = generateDifficulty(currentWinCount, bonusMissRate, currentWinProb);
+        const nextDiff = generateDifficulty(currentWinCount, null, currentWinProb);
         session.emojis = nextDiff.emojis;
         session.correctIndices = nextDiff.correctIndices;
         session.correctCount = nextDiff.correctCount;
@@ -224,7 +219,7 @@ app.get('/check', (req, res) => {
                         bonusChance: ${session.bonusChance},
                         choices: ${JSON.stringify(nextDiff.emojis)},
                         correctCount: ${nextDiff.correctCount},
-                        isBonus: ${isBonus}
+                        isBonus: ${session.isBonus}
                     };
                     if (window.opener) {
                         window.opener.postMessage(data, '*');
