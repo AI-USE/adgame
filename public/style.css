@@ -181,6 +181,43 @@ h1 {
     background-color: #e8f0fe !important;
 }
 
+.hint-container {
+    margin-top: 1.5rem;
+}
+
+#hint-btn {
+    background-color: #fbbc04;
+    color: #3c4043;
+    padding: 0.6rem 1.2rem;
+    font-weight: bold;
+    border-radius: 20px;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+}
+
+#hint-btn:hover:not(:disabled) {
+    background-color: #f7cb4d;
+    transform: translateY(-2px);
+}
+
+#hint-btn:disabled {
+    background-color: #f1f3f4;
+    color: #9aa0a6;
+    cursor: not-allowed;
+}
+
+.hint-highlight {
+    box-shadow: 0 0 15px 5px #fbbc04 !important;
+    border-color: #fbbc04 !important;
+    animation: hintPulse 1s infinite alternate;
+}
+
+@keyframes hintPulse {
+    from { transform: scale(1); }
+    to { transform: scale(1.1); }
+}
+
 .correct-flash {
     animation: correctFlash 0.6s cubic-bezier(.25,.8,.25,1);
 }

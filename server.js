@@ -15,7 +15,7 @@ const stats = {
     totalCorrect: 0,
     totalIncorrect: 0
 };
-const ADMIN_PASSWORD = 'admin'; // In a real app, use environment variables
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin';
 
 const EMOJIS = ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐻‍❄️', '🐨', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵', '🐔', '🐧', '🐦', '🐤', '🐣', '🐥', '🦆', '🦅', '🦉', '🦇', '🐺', '🐗', '🐴', '🦄', '🐝', '🪱', '🐛', '🦋', '🐌', '🐞', '🐜', '🪰', '🪲', '🪳', '🦟', '🦗', '🕷', '🕸', '🦂', '🐢', '🐍', '🦎', '🦖', '🦕', '🐙', '🦑', '🦐', '🦞', '🦀', '🐡', '🐠', '🐟', '🐬', '🐳', '🐋', '🦈', '🐊', '🐅', '🐆', '🦓', '🦍', '🦧', '🦣', '🐘', '🦛', '🦏', '🐪', '🐫', '🦒', '🦘', '🦬', '🐃', '🐂', '🐄', '🐎', '🐖', '🐏', '🐑', '🦙', '🐐', '🦌', '🐕', '🐩', '🦮', '🐕‍🦺', '🐈', '🐈‍⬛', '🐓', '🦃', '🦤', '🦚', '🦜', '🦢', '🦩', '🕊', '🐇', '🦝', '🦨', '🦡', '🦦', '🦫', '🦥', '🐁', '🐀', '🐿', '🦔'];
 
@@ -54,6 +54,7 @@ app.post('/api/start', (req, res) => {
     sessions[sessionId] = {
         winCount: 0,
         ...diff,
+        hintUsed: false,
         lastSeen: Date.now()
     };
     stats.totalPlays += 1;
@@ -86,6 +87,7 @@ app.get('/check', (req, res) => {
         session.emojis = nextDiff.emojis;
         session.correctIndices = nextDiff.correctIndices;
         session.correctCount = nextDiff.correctCount;
+        session.hintUsed = false;
 
         res.send(`
             <!DOCTYPE html>
@@ -133,6 +135,8 @@ app.get('/check', (req, res) => {
             const rankingEntry = { ...historyEntry };
             rankings.push(rankingEntry);
             rankings.sort((a, b) => b.score - a.score);
+            if (rankings.length > 1000) rankings.pop();
+
             if (rankings.indexOf(rankingEntry) < 10) {
                 topToken = `TOP-${rankingEntry.id}-${finalScore}`;
             }
@@ -188,7 +192,27 @@ app.post('/api/admin/add-dummy', adminAuth, (req, res) => {
     };
     rankings.push(rankingEntry);
     rankings.sort((a, b) => b.score - a.score);
+    if (rankings.length > 1000) rankings.pop();
     res.json({ success: true });
+});
+
+app.post('/api/hint', (req, res) => {
+    const { sessionId } = req.body;
+    const session = sessions[sessionId];
+
+    if (!session) {
+        return res.status(400).json({ error: 'Invalid session' });
+    }
+
+    if (session.hintUsed) {
+        return res.status(400).json({ error: 'Hint already used this round' });
+    }
+
+    const randomIndex = Math.floor(Math.random() * session.correctIndices.length);
+    const hintIndex = session.correctIndices[randomIndex];
+    session.hintUsed = true;
+
+    res.json({ hintIndex });
 });
 
 app.post('/api/admin/delete-ranking', adminAuth, (req, res) => {

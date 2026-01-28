@@ -15,6 +15,7 @@ const blockMessage = document.getElementById('block-message');
 const winCountDisplay = document.getElementById('win-count');
 const choicesContainer = document.getElementById('choices-container');
 const quizInstruction = document.getElementById('quiz-instruction');
+const hintBtn = document.getElementById('hint-btn');
 const rankingsList = document.getElementById('rankings-list');
 const finalScoreDisplay = document.getElementById('final-score');
 const tokenDisplay = document.getElementById('token-display');
@@ -110,7 +111,8 @@ function updateUI() {
 
 function renderChoices(choices, correctCount) {
     choicesContainer.innerHTML = '';
-    quizInstruction.textContent = `${choices.length}個の中から正解を${correctCount}個選んでください！`;
+    quizInstruction.textContent = `${choices.length}個の中から正解（${correctCount}個）を1つ選んでください！`;
+    hintBtn.disabled = false;
 
     choices.forEach((emoji, index) => {
         const btn = document.createElement('button');
@@ -173,6 +175,24 @@ window.addEventListener('load', () => {
         showScreen(gameScreen);
     }
     updateRankings();
+});
+
+hintBtn.addEventListener('click', async () => {
+    try {
+        const response = await fetch('/api/hint', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionId })
+        });
+        const data = await response.json();
+        if (data.hintIndex !== undefined) {
+            const buttons = choicesContainer.querySelectorAll('.choice-btn');
+            buttons[data.hintIndex].classList.add('hint-highlight');
+            hintBtn.disabled = true;
+        }
+    } catch (e) {
+        console.error('Hint failed', e);
+    }
 });
 
 adTrigger.addEventListener('click', () => {
