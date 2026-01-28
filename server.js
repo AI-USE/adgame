@@ -1,21 +1,49 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const cors = require('cors');
+const fs = require('fs');
+const path = require('path');
 
 const app = express();
 app.use(express.json());
 app.use(cors());
 app.use(express.static('public'));
 
+const DATA_FILE = path.join(__dirname, 'data.json');
+
 const sessions = {};
-const rankings = []; // Top rankings (unique nicknames)
-const history = [];  // All game results
-const emails = [];   // Registered emails for prizes
-const stats = {
+let rankings = []; // Top rankings (unique nicknames)
+let history = [];  // All game results
+let emails = [];   // Registered emails for prizes
+let playerMetadata = {}; // Store persistent info like lastBonusDate
+let stats = {
     totalPlays: 0,
     totalCorrect: 0,
     totalIncorrect: 0
 };
+
+function loadData() {
+    if (fs.existsSync(DATA_FILE)) {
+        try {
+            const data = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+            rankings = data.rankings || [];
+            history = data.history || [];
+            emails = data.emails || [];
+            playerMetadata = data.playerMetadata || {};
+            stats = data.stats || { totalPlays: 0, totalCorrect: 0, totalIncorrect: 0 };
+            console.log('Data loaded from persistence.');
+        } catch (e) {
+            console.error('Failed to load data:', e);
+        }
+    }
+}
+
+function saveData() {
+    const data = { rankings, history, emails, playerMetadata, stats };
+    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
+}
+
+loadData();
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin';
 
 const EMOJIS = ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐻‍❄️', '🐨', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵', '🐔', '🐧', '🐦', '🐤', '🐣', '🐥', '🦆', '🦅', '🦉', '🦇', '🐺', '🐗', '🐴', '🦄', '🐝', '🪱', '🐛', '🦋', '🐌', '🐞', '🐜', '🪰', '🪲', '🪳', '🦟', '🦗', '🕷', '🕸', '🦂', '🐢', '🐍', '🦎', '🦖', '🦕', '🐙', '🦑', '🦐', '🦞', '🦀', '🐡', '🐠', '🐟', '🐬', '🐳', '🐋', '🦈', '🐊', '🐅', '🐆', '🦓', '🦍', '🦧', '🦣', '🐘', '🦛', '🦏', '🐪', '🐫', '🦒', '🦘', '🦬', '🐃', '🐂', '🐄', '🐎', '🐖', '🐏', '🐑', '🦙', '🐐', '🦌', '🐕', '🐩', '🦮', '🐕‍🦺', '🐈', '🐈‍⬛', '🐓', '🦃', '🦤', '🦚', '🦜', '🦢', '🦩', '🕊', '🐇', '🦝', '🦨', '🦡', '🦦', '🦫', '🦥', '🐁', '🐀', '🐿', '🦔'];
@@ -73,8 +101,38 @@ app.get('/api/rankings', (req, res) => {
     res.json(rankings.slice(0, 5));
 });
 
+app.get('/api/my-rank', (req, res) => {
+    const { nickname } = req.query;
+    if (!nickname) return res.status(400).json({ error: 'Nickname required' });
+
+    const rank = rankings.findIndex(r => r.nickname === nickname);
+    if (rank === -1) {
+        res.json({ inTop5: false, message: 'ランキング圏外です' });
+    } else if (rank < 5) {
+        res.json({ inTop5: true, rank: rank + 1, message: `現在${rank + 1}位です！` });
+    } else {
+        res.json({ inTop5: false, rank: rank + 1, message: `現在${rank + 1}位です（TOP5圏外）` });
+    }
+});
+
 app.post('/api/start', (req, res) => {
     const { nickname } = req.body;
+
+    // Daily Limit Check
+    if (nickname) {
+        const meta = playerMetadata[nickname];
+        if (meta && meta.lastBonusDate) {
+            const lastDate = new Date(meta.lastBonusDate).toDateString();
+            const today = new Date().toDateString();
+            if (lastDate === today) {
+                return res.status(403).json({
+                    error: 'Daily Limit',
+                    message: '本日のボーナスプレーは既に終了しました。また明日挑戦してください！'
+                });
+            }
+        }
+    }
+
     const sessionId = uuidv4();
     const diff = generateDifficulty(0);
     sessions[sessionId] = {
@@ -85,6 +143,7 @@ app.post('/api/start', (req, res) => {
         lastSeen: Date.now()
     };
     stats.totalPlays += 1;
+    saveData();
     res.json({
         sessionId,
         winCount: 0,
@@ -119,6 +178,14 @@ app.get('/check', (req, res) => {
             session.bonusChance = 0.01;
             isBonus = true;
         }
+
+        if (isBonus) {
+            const nickname = session.nickname;
+            if (!playerMetadata[nickname]) playerMetadata[nickname] = {};
+            playerMetadata[nickname].lastBonusDate = new Date();
+        }
+
+        saveData();
 
         const nextDiff = generateDifficulty(currentWinCount, bonusMissRate);
         session.emojis = nextDiff.emojis;
@@ -189,6 +256,7 @@ app.get('/check', (req, res) => {
             }
         }
 
+        saveData();
         delete sessions[sessionId];
         res.send(`
             <!DOCTYPE html>
@@ -236,16 +304,17 @@ app.get('/api/admin/emails', adminAuth, (req, res) => {
 });
 
 app.post('/api/admin/add-dummy', adminAuth, (req, res) => {
-    const { score } = req.body;
+    const { score, nickname } = req.body;
     const rankingEntry = {
         score: parseInt(score),
         date: new Date(),
         id: 'DUMMY-' + Math.floor(Math.random() * 1000),
-        nickname: 'DummyPlayer'
+        nickname: nickname || 'DummyPlayer'
     };
     rankings.push(rankingEntry);
     rankings.sort((a, b) => b.score - a.score || new Date(a.date) - new Date(b.date));
     if (rankings.length > 100) rankings.pop();
+    saveData();
     res.json({ success: true });
 });
 
@@ -257,6 +326,7 @@ app.post('/api/register-email', (req, res) => {
     }
     const { nickname, email } = req.body;
     emails.push({ nickname, email, date: new Date() });
+    saveData();
     res.json({ success: true });
 });
 
@@ -267,6 +337,7 @@ app.post('/api/admin/delete-ranking', adminAuth, (req, res) => {
     const index = rankings.findIndex(r => r.id === id);
     if (index !== -1) {
         rankings.splice(index, 1);
+        saveData();
         res.json({ success: true });
     } else {
         res.status(404).json({ error: 'Not found' });

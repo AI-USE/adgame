@@ -127,6 +127,7 @@ window.deleteRanking = async (id) => {
 };
 
 document.getElementById('add-dummy-btn').addEventListener('click', async () => {
+    const nickname = document.getElementById('dummy-nickname').value.trim();
     const score = document.getElementById('dummy-score').value;
     if (!score) return;
     try {
@@ -136,9 +137,10 @@ document.getElementById('add-dummy-btn').addEventListener('click', async () => {
                 'Content-Type': 'application/json',
                 'x-admin-password': adminPassword
             },
-            body: JSON.stringify({ score })
+            body: JSON.stringify({ nickname, score })
         });
         if (response.ok) {
+            document.getElementById('dummy-nickname').value = '';
             document.getElementById('dummy-score').value = '';
             refreshData();
         }

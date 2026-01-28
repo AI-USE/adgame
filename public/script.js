@@ -16,6 +16,8 @@ const winCountDisplay = document.getElementById('win-count');
 const choicesContainer = document.getElementById('choices-container');
 const quizInstruction = document.getElementById('quiz-instruction');
 const bonusIndicator = document.getElementById('bonus-indicator');
+const checkRankBtn = document.getElementById('check-rank-btn');
+const rankCheckResult = document.getElementById('rank-check-result');
 const rankingsList = document.getElementById('rankings-list');
 const finalScoreDisplay = document.getElementById('final-score');
 const tokenDisplay = document.getElementById('token-display');
@@ -117,6 +119,15 @@ async function startGame() {
             body: JSON.stringify({ nickname })
         });
         const data = await response.json();
+
+        if (!response.ok) {
+            if (response.status === 403 && data.error === 'Daily Limit') {
+                alert(data.message);
+                return;
+            }
+            throw new Error(data.error || 'Failed to start');
+        }
+
         sessionId = data.sessionId;
         localStorage.setItem('sessionId', sessionId);
         winCount = data.winCount;
@@ -238,6 +249,23 @@ window.addEventListener('load', () => {
         showScreen(gameScreen);
     }
     updateRankings();
+});
+
+checkRankBtn.addEventListener('click', async () => {
+    const nickname = nicknameInput.value.trim();
+    if (!nickname) {
+        alert('ニックネームを入力してください');
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/my-rank?nickname=${encodeURIComponent(nickname)}`);
+        const data = await response.json();
+        rankCheckResult.textContent = data.message;
+        rankCheckResult.classList.remove('hidden');
+    } catch (e) {
+        console.error('Failed to check rank', e);
+    }
 });
 
 adTrigger.addEventListener('click', () => {
