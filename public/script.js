@@ -209,7 +209,7 @@ const renderQuiz = (data) => {
         btn.textContent = emoji;
         btn.onclick = () => {
             const skipAd = shouldSkipAd();
-            const url = `/check?sessionId=${state.sessionId}&choice=${idx}${skipAd ? '&noRedirect=1' : ''}`;
+            const url = `/api/check?sessionId=${state.sessionId}&choice=${idx}${skipAd ? '&noRedirect=1' : ''}`;
 
             const win = window.open(url, '_blank');
             if (!win) {

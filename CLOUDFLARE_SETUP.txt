@@ -1,0 +1,42 @@
+# Cloudflare Pages + Functions への登録・デプロイ方法
+
+このプロジェクトを Cloudflare にデプロイするための手順です。
+
+## 1. プロジェクトの準備
+1. このリポジトリを GitHub などの Git ホスティングサービスにプッシュします。
+
+## 2. Cloudflare Pages の作成
+1. Cloudflare ダッシュボードにログインし、「Workers & Pages」を選択します。
+2. 「Create application」->「Pages」->「Connect to Git」をクリックします。
+3. リポジトリを選択し、「Begin setup」をクリックします。
+
+## 3. ビルド設定
+- **Project name**: 任意の名前
+- **Production branch**: `main` (または使用しているブランチ)
+- **Framework preset**: `None`
+- **Build command**: (空欄のままでOK)
+- **Build output directory**: `public`
+
+## 4. KVストレージ（データベース）の設定
+このゲームはランキングやセッション情報を保存するために Cloudflare KV を使用します。
+
+1. Cloudflare ダッシュボードで「Workers & Pages」->「KV」を選択します。
+2. 「Create a namespace」をクリックし、名前を `MIN_KV`（または任意）にして作成します。
+3. 作成した Pages プロジェクトの設定（Settings）->「Functions」->「KV namespace bindings」に進みます。
+4. 「Production」および「Preview」の両方で以下の設定を追加します：
+   - **Variable name**: `MIN_KV`
+   - **KV namespace**: 先ほど作成したネームスペースを選択
+5. 保存します。
+
+## 5. 環境変数の設定 (管理画面パスワード)
+1. Pages プロジェクトの設定（Settings）->「Environment variables」に進みます。
+2. 「Production」および「Preview」に以下を追加します：
+   - **Variable name**: `ADMIN_PASSWORD`
+   - **Value**: 管理画面で使用する任意のパスワード（デフォルトは `admin`）
+
+## 6. 再デプロイ
+1. 設定を変更した後は、再度デプロイ（Deployments 画面から「Retry deployment」）を行うことで、KVバインディングと環境変数が有効になります。
+
+## 管理画面へのアクセス
+- `https://あなたのプロジェクト.pages.dev/admin.html`
+- 先ほど設定した `ADMIN_PASSWORD` を入力してログインしてください。

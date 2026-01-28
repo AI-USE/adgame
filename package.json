@@ -2,26 +2,15 @@
   "name": "app",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/AI-USE/adgame.git"
+    "dev": "wrangler pages dev public"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
-  "bugs": {
-    "url": "https://github.com/AI-USE/adgame/issues"
-  },
-  "homepage": "https://github.com/AI-USE/adgame#readme",
-  "dependencies": {
-    "cors": "^2.8.5",
-    "express": "^5.0.1",
-    "uuid": "^11.0.3"
+  "dependencies": {},
+  "devDependencies": {
+    "wrangler": "^3.0.0"
   }
 }
