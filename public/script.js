@@ -2,8 +2,14 @@ const state = {
     sessionId: null,
     winCount: 0,
     nickname: localStorage.getItem('nickname') || '',
+    userId: localStorage.getItem('userId') || '',
     isAdBlockDetected: false
 };
+
+if (!state.userId) {
+    state.userId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    localStorage.setItem('userId', state.userId);
+}
 
 // Elements
 const startScreen = document.getElementById('start-screen');
@@ -229,7 +235,10 @@ const startGame = async () => {
     try {
         const res = await fetch('/api/start', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'X-User-ID': state.userId
+            },
             body: JSON.stringify({ nickname })
         });
 

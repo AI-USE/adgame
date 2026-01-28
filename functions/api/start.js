@@ -3,6 +3,7 @@ import { generateDifficulty, getStorage, saveStorage, saveSession } from '../_ut
 export async function onRequestPost(context) {
     const { request, env } = context;
     const { nickname } = await request.json();
+    const userId = request.headers.get('X-User-ID') || nickname || 'anonymous';
 
     const storage = await getStorage(env);
 
@@ -10,21 +11,41 @@ export async function onRequestPost(context) {
     let isBonus = false;
     let bonusChance = 0.01;
 
-    if (nickname) {
-        if (!storage.playerMetadata[nickname]) storage.playerMetadata[nickname] = { cumulativeBonusChance: 0.01 };
-        const meta = storage.playerMetadata[nickname];
+    if (!storage.playerMetadata[userId]) {
+        storage.playerMetadata[userId] = {
+            cumulativeBonusChance: 0.01,
+            hasAchieved10Wins: false,
+            lastBonusDate: null
+        };
+    }
+    const meta = storage.playerMetadata[userId];
 
-        meta.cumulativeBonusChance = (meta.cumulativeBonusChance || 0.01) + 0.02;
-        bonusChance = meta.cumulativeBonusChance;
+    // ボーナスプレイをその日既に実施したかチェック
+    if (meta.lastBonusDate && (new Date(meta.lastBonusDate).toDateString() === new Date().toDateString())) {
+        return new Response(JSON.stringify({
+            message: "本日はこれ以上プレイできません（ボーナスプレイ完了済み）。明日また挑戦してください！"
+        }), {
+            status: 403,
+            headers: { 'Content-Type': 'application/json; charset=UTF-8' }
+        });
+    }
 
-        const canHaveBonus = !meta.lastBonusDate || (new Date(meta.lastBonusDate).toDateString() !== new Date().toDateString());
-
-        if (canHaveBonus && Math.random() < meta.cumulativeBonusChance) {
+    // ボーナスプレイの判定 (10連達成後)
+    if (meta.hasAchieved10Wins) {
+        bonusChance = meta.cumulativeBonusChance || 0.01;
+        if (Math.random() < bonusChance) {
             isBonus = true;
-            winProb = Math.floor(Math.random() * (95 - 70 + 1)) + 70;
+            // ボーナス時は当選確率 70-99% (低い方に偏らせる)
+            winProb = Math.floor(Math.pow(Math.random(), 2) * (99 - 70 + 1)) + 70;
             meta.cumulativeBonusChance = 0.01;
             meta.lastBonusDate = new Date().toISOString();
+        } else {
+            meta.cumulativeBonusChance = bonusChance + 0.02;
         }
+    } else {
+        // 10連未達成の場合はボーナス発生しない
+        bonusChance = 0;
+        isBonus = false;
     }
 
     const diff = generateDifficulty(0, null, winProb);
@@ -32,6 +53,7 @@ export async function onRequestPost(context) {
 
     const sessionData = {
         nickname: nickname || 'ゲスト',
+        userId: userId,
         winCount: 0,
         winProb: winProb,
         isBonus: isBonus,

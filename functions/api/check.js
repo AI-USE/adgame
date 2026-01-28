@@ -19,8 +19,15 @@ export async function onRequestGet(context) {
         session.winCount += 1;
         storage.stats.totalCorrect += 1;
 
+        if (session.winCount >= 10) {
+            if (session.userId && storage.playerMetadata[session.userId]) {
+                storage.playerMetadata[session.userId].hasAchieved10Wins = true;
+            }
+        }
+
         if (!session.isBonus) {
-            if (Math.random() >= 0.05) {
+            // 難易度（当選確率の低下）が発生する確率を30%に設定（＝上がらない確率70%）
+            if (Math.random() < 0.30) {
                 const decrease = Math.floor(Math.random() * 5) + 1;
                 session.winProb = Math.max(15, session.winProb - decrease);
             }
