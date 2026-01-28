@@ -54,6 +54,6 @@ export async function onRequestPost(context) {
         correctCount: diff.correctCount,
         isBonus: isBonus
     }), {
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json; charset=UTF-8' }
     });
 }

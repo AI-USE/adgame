@@ -14,5 +14,7 @@ export async function onRequestPost(context) {
     storage.emails.push({ nickname, email, date: new Date().toISOString() });
     await saveStorage(env, storage);
 
-    return new Response(JSON.stringify({ success: true }));
+    return new Response(JSON.stringify({ success: true }), {
+        headers: { 'Content-Type': 'application/json; charset=UTF-8' }
+    });
 }

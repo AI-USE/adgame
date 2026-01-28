@@ -25,5 +25,7 @@ export async function onRequestGet(context) {
         history: storage.history,
         config: storage.config,
         activeSessions: 0 // KV doesn't easily list sessions without list()
-    }));
+    }), {
+        headers: { 'Content-Type': 'application/json; charset=UTF-8' }
+    });
 }

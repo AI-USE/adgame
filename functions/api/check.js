@@ -40,7 +40,8 @@ export async function onRequestGet(context) {
 
         return new Response(`
             <!DOCTYPE html>
-            <html>
+            <html lang="ja">
+            <head><meta charset="UTF-8"></head>
             <body>
                 <script>
                     const data = {
@@ -72,7 +73,7 @@ export async function onRequestGet(context) {
                 <p>正解！画面を戻ります...</p>
             </body>
             </html>
-        `, { headers: { 'Content-Type': 'text/html' } });
+        `, { headers: { 'Content-Type': 'text/html; charset=UTF-8' } });
     } else {
         const finalScore = session.winCount;
         storage.stats.totalIncorrect += 1;
@@ -110,7 +111,8 @@ export async function onRequestGet(context) {
 
         return new Response(`
             <!DOCTYPE html>
-            <html>
+            <html lang="ja">
+            <head><meta charset="UTF-8"></head>
             <body>
                 <script>
                     if (window.opener) {
@@ -135,6 +137,6 @@ export async function onRequestGet(context) {
                 <p>不正解！${noRedirect === '1' ? '画面を戻ります...' : '広告に移動します...'}</p>
             </body>
             </html>
-        `, { headers: { 'Content-Type': 'text/html' } });
+        `, { headers: { 'Content-Type': 'text/html; charset=UTF-8' } });
     }
 }

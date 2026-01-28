@@ -43,32 +43,81 @@ async function loadDashboard() {
 
         // Ranking Table
         const rankingTbody = document.getElementById('ranking-tbody');
-        rankingTbody.innerHTML = data.rankings.map((r, i) => `
-            <tr>
-                <td class="px-6 py-4 font-bold text-slate-300">${i + 1}</td>
-                <td class="px-6 py-4 font-bold">${r.nickname}</td>
-                <td class="px-6 py-4 font-black text-indigo-600">${r.score}</td>
-                <td class="px-6 py-4">
-                    ${r.email ? `<span class="bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full text-xs font-semibold">${r.email}</span>` : '<span class="text-slate-300">-</span>'}
-                </td>
-                <td class="px-6 py-4 text-xs text-slate-400">
-                    ${new Date(r.date).toLocaleString('ja-JP', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
-                </td>
-                <td class="px-6 py-4">
-                    <button onclick="deleteRanking('${r.id}')" class="text-rose-400 hover:text-rose-600 text-xs font-bold bg-rose-50 px-3 py-1 rounded-lg transition-colors">Delete</button>
-                </td>
-            </tr>
-        `).join('');
+        rankingTbody.innerHTML = '';
+        data.rankings.forEach((r, i) => {
+            const tr = document.createElement('tr');
+
+            const tdRank = document.createElement('td');
+            tdRank.className = 'px-6 py-4 font-bold text-slate-300';
+            tdRank.textContent = i + 1;
+
+            const tdName = document.createElement('td');
+            tdName.className = 'px-6 py-4 font-bold';
+            tdName.textContent = r.nickname;
+
+            const tdScore = document.createElement('td');
+            tdScore.className = 'px-6 py-4 font-black text-indigo-600';
+            tdScore.textContent = r.score;
+
+            const tdEmail = document.createElement('td');
+            tdEmail.className = 'px-6 py-4';
+            if (r.email) {
+                const badge = document.createElement('span');
+                badge.className = 'bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full text-xs font-semibold';
+                badge.textContent = r.email;
+                tdEmail.appendChild(badge);
+            } else {
+                const dash = document.createElement('span');
+                dash.className = 'text-slate-300';
+                dash.textContent = '-';
+                tdEmail.appendChild(dash);
+            }
+
+            const tdDate = document.createElement('td');
+            tdDate.className = 'px-6 py-4 text-xs text-slate-400';
+            tdDate.textContent = new Date(r.date).toLocaleString('ja-JP', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+
+            const tdAction = document.createElement('td');
+            tdAction.className = 'px-6 py-4';
+            const delBtn = document.createElement('button');
+            delBtn.className = 'text-rose-400 hover:text-rose-600 text-xs font-bold bg-rose-50 px-3 py-1 rounded-lg transition-colors';
+            delBtn.textContent = 'Delete';
+            delBtn.onclick = () => window.deleteRanking(r.id);
+            tdAction.appendChild(delBtn);
+
+            tr.appendChild(tdRank);
+            tr.appendChild(tdName);
+            tr.appendChild(tdScore);
+            tr.appendChild(tdEmail);
+            tr.appendChild(tdDate);
+            tr.appendChild(tdAction);
+            rankingTbody.appendChild(tr);
+        });
 
         // History Table
         const historyTbody = document.getElementById('history-tbody');
-        historyTbody.innerHTML = data.history.map(h => `
-            <tr class="text-xs">
-                <td class="px-6 py-3 font-mono text-slate-400">${h.id}</td>
-                <td class="px-6 py-3 font-bold">${h.score}</td>
-                <td class="px-6 py-3 text-slate-400">${new Date(h.date).toLocaleTimeString()}</td>
-            </tr>
-        `).join('');
+        historyTbody.innerHTML = '';
+        data.history.forEach(h => {
+            const tr = document.createElement('tr');
+            tr.className = 'text-xs';
+
+            const tdId = document.createElement('td');
+            tdId.className = 'px-6 py-3 font-mono text-slate-400';
+            tdId.textContent = h.id;
+
+            const tdScore = document.createElement('td');
+            tdScore.className = 'px-6 py-3 font-bold';
+            tdScore.textContent = h.score;
+
+            const tdTime = document.createElement('td');
+            tdTime.className = 'px-6 py-3 text-slate-400';
+            tdTime.textContent = new Date(h.date).toLocaleTimeString();
+
+            tr.appendChild(tdId);
+            tr.appendChild(tdScore);
+            tr.appendChild(tdTime);
+            historyTbody.appendChild(tr);
+        });
 
     } catch (e) {
         console.error(e);

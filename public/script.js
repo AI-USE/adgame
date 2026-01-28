@@ -183,15 +183,37 @@ const updateRankings = async () => {
     try {
         const res = await fetch('/api/rankings');
         const data = await res.json();
-        rankingList.innerHTML = data.map((r, i) => `
-            <div class="flex items-center justify-between px-6 py-4">
-                <div class="flex items-center gap-4">
-                    <span class="font-bold text-slate-300 w-4">${i + 1}</span>
-                    <span class="font-semibold text-slate-700">${r.nickname || 'ゲスト'}</span>
-                </div>
-                <span class="text-indigo-600 font-bold">${r.score} 連勝</span>
-            </div>
-        `).join('') || '<p class="p-6 text-slate-400 text-center">まだランキングはありません</p>';
+        if (data.length === 0) {
+            rankingList.innerHTML = '<p class="p-6 text-slate-400 text-center">まだランキングはありません</p>';
+            return;
+        }
+        rankingList.innerHTML = '';
+        data.forEach((r, i) => {
+            const item = document.createElement('div');
+            item.className = 'flex items-center justify-between px-6 py-4';
+
+            const left = document.createElement('div');
+            left.className = 'flex items-center gap-4';
+
+            const rank = document.createElement('span');
+            rank.className = 'font-bold text-slate-300 w-4';
+            rank.textContent = i + 1;
+
+            const name = document.createElement('span');
+            name.className = 'font-semibold text-slate-700';
+            name.textContent = r.nickname || 'ゲスト';
+
+            left.appendChild(rank);
+            left.appendChild(name);
+
+            const score = document.createElement('span');
+            score.className = 'text-indigo-600 font-bold';
+            score.textContent = `${r.score} 連勝`;
+
+            item.appendChild(left);
+            item.appendChild(score);
+            rankingList.appendChild(item);
+        });
     } catch (e) { console.error(e); }
 };
 
@@ -247,7 +269,9 @@ const renderQuiz = (data) => {
     choicesContainer.innerHTML = '';
     data.choices.forEach((emoji, idx) => {
         const btn = document.createElement('button');
-        btn.className = 'quiz-btn bg-white border border-slate-100 hover:border-indigo-500 hover:bg-indigo-50 text-xl md:text-3xl p-1 md:p-2 rounded md:rounded-lg shadow-sm transition-all flex items-center justify-center aspect-square';
+        btn.className = 'quiz-btn animate-float bg-white border border-slate-100 hover:border-indigo-500 hover:bg-indigo-50 text-xl md:text-3xl p-1 md:p-2 rounded md:rounded-lg shadow-sm transition-all flex items-center justify-center aspect-square';
+        btn.style.animationDelay = (Math.random() * -4).toFixed(2) + 's';
+        btn.style.animationDuration = (3 + Math.random() * 2).toFixed(2) + 's';
         btn.textContent = emoji;
         btn.onclick = () => {
             const skipAd = shouldSkipAd();

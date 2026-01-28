@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Infinite Master - 無限マスターへの道</title>
+    <title>目指せ十連続マスター</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -11,6 +11,18 @@
         .quiz-btn { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
         .quiz-btn:active { transform: scale(0.95); }
         .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+
+        @keyframes float-around {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            25% { transform: translate(2px, -2px) rotate(1deg); }
+            50% { transform: translate(-1px, 2px) rotate(-1deg); }
+            75% { transform: translate(-2px, -1px) rotate(0.5deg); }
+            100% { transform: translate(0, 0) rotate(0deg); }
+        }
+        .animate-float {
+            animation: float-around 4s ease-in-out infinite;
+        }
+
         @keyframes shake {
             10%, 90% { transform: translate3d(-1px, 0, 0); }
             20%, 80% { transform: translate3d(2px, 0, 0); }
@@ -33,7 +45,7 @@
         <div id="start-screen" class="w-full text-center space-y-8 animate-fade-in">
             <div class="space-y-2">
                 <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900">
-                    無限マスター
+                    目指せ十連続マスター
                 </h1>
                 <p class="text-slate-500 text-lg">次々と現れる絵文字の中から正解を見つけ出せ</p>
             </div>
