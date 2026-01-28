@@ -20,7 +20,14 @@ const rankingsList = document.getElementById('rankings-list');
 const finalScoreDisplay = document.getElementById('final-score');
 const tokenDisplay = document.getElementById('token-display');
 const rankToken = document.getElementById('rank-token');
+const nicknameInput = document.getElementById('nickname-input');
+const emailSection = document.getElementById('email-section');
+const emailInput1 = document.getElementById('email-input-1');
+const emailInput2 = document.getElementById('email-input-2');
+const emailSubmitBtn = document.getElementById('email-submit-btn');
+
 let popupBlockDetected = false;
+let currentNickname = '';
 
 // Environment Check
 async function checkEnvironment() {
@@ -78,20 +85,37 @@ async function updateRankings() {
     try {
         const response = await fetch('/api/rankings');
         const data = await response.json();
-        rankingsList.innerHTML = data.map((r, i) => `
-            <li>
-                <span>${i + 1}. ID:${r.id}</span>
-                <span>${r.score}連勝</span>
-            </li>
-        `).join('');
+        rankingsList.innerHTML = '';
+        data.forEach((r, i) => {
+            const li = document.createElement('li');
+            const nameSpan = document.createElement('span');
+            nameSpan.textContent = `${i + 1}. ${r.nickname || 'Guest'}`;
+            const scoreSpan = document.createElement('span');
+            scoreSpan.textContent = `${r.score}連勝`;
+            li.appendChild(nameSpan);
+            li.appendChild(scoreSpan);
+            rankingsList.appendChild(li);
+        });
     } catch (e) {
         console.error('Failed to update rankings', e);
     }
 }
 
 async function startGame() {
+    const nickname = nicknameInput.value.trim();
+    if (!nickname) {
+        alert('ニックネームを入力してください');
+        return;
+    }
+    currentNickname = nickname;
+    localStorage.setItem('nickname', nickname);
+
     try {
-        const response = await fetch('/api/start', { method: 'POST' });
+        const response = await fetch('/api/start', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nickname })
+        });
         const data = await response.json();
         sessionId = data.sessionId;
         localStorage.setItem('sessionId', sessionId);
@@ -149,11 +173,15 @@ window.addEventListener('message', (event) => {
             setTimeout(() => document.getElementById('app').classList.remove('shake'), 500);
 
             finalScoreDisplay.textContent = score;
+
+            // Show email section if in top 5 (indicated by token)
             if (token) {
                 tokenDisplay.classList.remove('hidden');
                 rankToken.textContent = token;
+                emailSection.classList.remove('hidden');
             } else {
                 tokenDisplay.classList.add('hidden');
+                emailSection.classList.add('hidden');
             }
 
             showScreen(gameOverScreen);
@@ -162,9 +190,35 @@ window.addEventListener('message', (event) => {
     }
 });
 
+emailSubmitBtn.addEventListener('click', async () => {
+    const e1 = emailInput1.value.trim();
+    const e2 = emailInput2.value.trim();
+
+    if (!e1 || e1 !== e2) {
+        alert('メールアドレスが一致しません');
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/register-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nickname: currentNickname, email: e1 })
+        });
+        if (response.ok) {
+            alert('メールアドレスを登録しました');
+            emailSection.classList.add('hidden');
+        }
+    } catch (e) {
+        console.error('Email registration failed', e);
+    }
+});
+
 // Handle fallback parameters on load
 window.addEventListener('load', () => {
     sessionId = localStorage.getItem('sessionId');
+    currentNickname = localStorage.getItem('nickname') || '';
+    if (currentNickname) nicknameInput.value = currentNickname;
     const params = new URLSearchParams(window.location.search);
     if (params.has('winCount')) {
         winCount = parseInt(params.get('winCount'));

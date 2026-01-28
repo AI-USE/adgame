@@ -38,23 +38,46 @@ function updateUI(data) {
     document.getElementById('total-incorrect').textContent = data.stats.totalIncorrect;
 
     const rankingBody = document.querySelector('#ranking-table tbody');
-    rankingBody.innerHTML = data.rankings.map(r => `
-        <tr>
-            <td>${r.id}</td>
-            <td>${r.score}</td>
-            <td>${new Date(r.date).toLocaleString()}</td>
-            <td><button class="delete-btn" onclick="deleteRanking('${r.id}')">削除</button></td>
-        </tr>
-    `).join('');
+    rankingBody.innerHTML = '';
+    data.rankings.forEach(r => {
+        const tr = document.createElement('tr');
+
+        const idTd = document.createElement('td');
+        idTd.textContent = r.id;
+
+        const nickTd = document.createElement('td');
+        nickTd.textContent = r.nickname || 'Guest';
+
+        const scoreTd = document.createElement('td');
+        scoreTd.textContent = r.score;
+
+        const dateTd = document.createElement('td');
+        dateTd.textContent = new Date(r.date).toLocaleString();
+
+        const actionTd = document.createElement('td');
+        const delBtn = document.createElement('button');
+        delBtn.className = 'delete-btn';
+        delBtn.textContent = '削除';
+        delBtn.onclick = () => deleteRanking(r.id);
+        actionTd.appendChild(delBtn);
+
+        tr.append(idTd, nickTd, scoreTd, dateTd, actionTd);
+        rankingBody.appendChild(tr);
+    });
 
     const historyBody = document.querySelector('#history-table tbody');
-    historyBody.innerHTML = data.history.map(h => `
-        <tr>
-            <td>${h.id}</td>
-            <td>${h.score}</td>
-            <td>${new Date(h.date).toLocaleString()}</td>
-        </tr>
-    `).join('');
+    historyBody.innerHTML = '';
+    data.history.forEach(h => {
+        const tr = document.createElement('tr');
+        const idTd = document.createElement('td');
+        idTd.textContent = h.id;
+        const scoreTd = document.createElement('td');
+        scoreTd.textContent = h.score;
+        const dateTd = document.createElement('td');
+        dateTd.textContent = new Date(h.date).toLocaleString();
+        tr.append(idTd, scoreTd, dateTd);
+        historyBody.appendChild(tr);
+    });
 }
 
 window.deleteRanking = async (id) => {

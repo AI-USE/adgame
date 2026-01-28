@@ -12,8 +12,23 @@
         <div id="start-screen" class="screen">
             <h1>無限マスターへの道</h1>
             <p>次々と現れる絵文字の中から正解を見つけ出し、無限の連勝を目指せ！</p>
-            <p class="warning">※不正解時はゲームオーバーとなり、スポンサー広告が表示されます</p>
-            <button id="start-btn">ゲーム開始</button>
+
+            <div class="registration">
+                <input type="text" id="nickname-input" placeholder="ニックネームを入力" maxlength="15">
+                <button id="start-btn">ゲーム開始</button>
+            </div>
+
+            <div class="event-info">
+                <h3>🏆 豪華賞品イベント開催中！</h3>
+                <p>期間：2026年2月4日まで</p>
+                <div class="prize-list">
+                    1位：3,000円 / 2位：2,000円 / 3位：1,000円<br>
+                    4位・5位：500円<br>
+                    <small>選べるギフトカード（Amazon, Apple, GooglePlay, etc...）</small>
+                </div>
+                <p class="warning">※不正解時はゲームオーバーとなり、スポンサー広告が表示されます</p>
+                <p><small>上位入賞者には終了後にメールが送られます。</small></p>
+            </div>
         </div>
 
         <!-- Game Screen -->
@@ -36,14 +51,24 @@
 
         <!-- Game Over Screen -->
         <div id="game-over-screen" class="screen hidden">
-            <h1>ゲームオーバー...</h1>
-            <p>最終スコア: <span id="final-score">0</span></p>
+            <h1>GAME OVER</h1>
+            <p>SCORE: <span id="final-score">0</span></p>
+
+            <div id="email-section" class="hidden">
+                <p class="neon-green">🎉 ハイスコア達成！</p>
+                <p>賞品受け取り用のメールアドレスを登録してください。</p>
+                <input type="email" id="email-input-1" placeholder="メールアドレスを入力">
+                <input type="email" id="email-input-2" placeholder="メールアドレスを再入力">
+                <button id="email-submit-btn">登録する</button>
+                <p><small>※入力ミスにご注意ください。認証はありません。</small></p>
+            </div>
+
             <div id="token-display" class="hidden">
-                <p>トップランカー識別トークン:</p>
+                <p>RANKING TOKEN:</p>
                 <code id="rank-token"></code>
             </div>
             <div id="ad-trigger" class="ad-trigger">
-                ここをクリックして再挑戦
+                TRY AGAIN (AD)
             </div>
         </div>
 

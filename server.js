@@ -8,8 +8,9 @@ app.use(cors());
 app.use(express.static('public'));
 
 const sessions = {};
-const rankings = [];
-const history = [];
+const rankings = []; // Top rankings (unique nicknames)
+const history = [];  // All game results
+const emails = [];   // Registered emails for prizes
 const stats = {
     totalPlays: 0,
     totalCorrect: 0,
@@ -24,9 +25,18 @@ function getRandomEmojis(count) {
     return shuffled.slice(0, count);
 }
 
-function generateDifficulty() {
-    const totalCount = Math.floor(Math.random() * 5) + 2; // 2 to 6 buttons
-    const correctCount = Math.floor(Math.random() * (totalCount - 1)) + 1; // 1 to totalCount-1
+function generateDifficulty(winCount = 0) {
+    // Progressive difficulty: more choices as winCount increases
+    // 0-2: 2, 3-5: 3, 6-8: 4, 9-11: 5, 12+: 6
+    const totalCount = Math.min(6, 2 + Math.floor(winCount / 3));
+
+    // Number of correct answers can also increase or stay 1
+    // Let's make it usually 1, but sometimes 2 if totalCount > 3
+    let correctCount = 1;
+    if (totalCount > 3 && Math.random() > 0.7) {
+        correctCount = 2;
+    }
+
     const emojis = getRandomEmojis(totalCount);
     const indices = Array.from({length: totalCount}, (_, i) => i);
     const correctIndices = indices.sort(() => 0.5 - Math.random()).slice(0, correctCount);
@@ -45,13 +55,15 @@ setInterval(() => {
 }, 3600000);
 
 app.get('/api/rankings', (req, res) => {
-    res.json(rankings.slice(0, 10));
+    res.json(rankings.slice(0, 5));
 });
 
 app.post('/api/start', (req, res) => {
+    const { nickname } = req.body;
     const sessionId = uuidv4();
-    const diff = generateDifficulty();
+    const diff = generateDifficulty(0);
     sessions[sessionId] = {
+        nickname: nickname || 'Guest',
         winCount: 0,
         ...diff,
         hintUsed: false,
@@ -83,7 +95,7 @@ app.get('/check', (req, res) => {
         stats.totalCorrect += 1;
         const currentWinCount = session.winCount;
 
-        const nextDiff = generateDifficulty();
+        const nextDiff = generateDifficulty(currentWinCount);
         session.emojis = nextDiff.emojis;
         session.correctIndices = nextDiff.correctIndices;
         session.correctCount = nextDiff.correctCount;
@@ -132,13 +144,21 @@ app.get('/check', (req, res) => {
         if (history.length > 100) history.pop();
 
         if (finalScore > 0) {
-            const rankingEntry = { ...historyEntry };
-            rankings.push(rankingEntry);
-            rankings.sort((a, b) => b.score - a.score);
-            if (rankings.length > 1000) rankings.pop();
+            const nickname = session.nickname;
+            const existingIndex = rankings.findIndex(r => r.nickname === nickname);
 
-            if (rankings.indexOf(rankingEntry) < 10) {
-                topToken = `TOP-${rankingEntry.id}-${finalScore}`;
+            if (existingIndex === -1 || rankings[existingIndex].score < finalScore) {
+                if (existingIndex !== -1) rankings.splice(existingIndex, 1);
+
+                const rankingEntry = { ...historyEntry, nickname };
+                rankings.push(rankingEntry);
+                rankings.sort((a, b) => b.score - a.score);
+                if (rankings.length > 100) rankings.pop();
+
+                const newRank = rankings.findIndex(r => r.id === rankingEntry.id);
+                if (newRank < 5) {
+                    topToken = `TOP-${rankingEntry.id}-${finalScore}`;
+                }
             }
         }
 
@@ -188,11 +208,23 @@ app.post('/api/admin/add-dummy', adminAuth, (req, res) => {
     const rankingEntry = {
         score: parseInt(score),
         date: new Date(),
-        id: 'DUMMY-' + Math.floor(Math.random() * 1000)
+        id: 'DUMMY-' + Math.floor(Math.random() * 1000),
+        nickname: 'DummyPlayer'
     };
     rankings.push(rankingEntry);
     rankings.sort((a, b) => b.score - a.score);
-    if (rankings.length > 1000) rankings.pop();
+    if (rankings.length > 100) rankings.pop();
+    res.json({ success: true });
+});
+
+app.post('/api/register-email', (req, res) => {
+    // Deadline: Feb 4th, 2026. Block after start of Feb 5th UTC.
+    const deadline = new Date('2026-02-05T00:00:00Z');
+    if (new Date() > deadline) {
+        return res.status(403).json({ error: 'Event has ended' });
+    }
+    const { nickname, email } = req.body;
+    emails.push({ nickname, email, date: new Date() });
     res.json({ success: true });
 });
 
