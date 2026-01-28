@@ -8,6 +8,23 @@ app.use(cors());
 app.use(express.static('public'));
 
 const sessions = {};
+const rankings = [];
+const EMOJIS = ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐻‍❄️', '🐨', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵', '🐔', '🐧', '🐦', '🐤', '🐣', '🐥', '🦆', '🦅', '🦉', '🦇', '🐺', '🐗', '🐴', '🦄', '🐝', '🪱', '🐛', '🦋', '🐌', '🐞', '🐜', '🪰', '🪲', '🪳', '🦟', '🦗', '🕷', '🕸', '🦂', '🐢', '🐍', '🦎', '🦖', '🦕', '🐙', '🦑', '🦐', '🦞', '🦀', '🐡', '🐠', '🐟', '🐬', '🐳', '🐋', '🦈', '🐊', '🐅', '🐆', '🦓', '🦍', '🦧', '🦣', '🐘', '🦛', '🦏', '🐪', '🐫', '🦒', '🦘', '🦬', '🐃', '🐂', '🐄', '🐎', '🐖', '🐏', '🐑', '🦙', '🐐', '🦌', '🐕', '🐩', '🦮', '🐕‍🦺', '🐈', '🐈‍⬛', '🐓', '🦃', '🦤', '🦚', '🦜', '🦢', '🦩', '🕊', '🐇', '🦝', '🦨', '🦡', '🦦', '🦫', '🦥', '🐁', '🐀', '🐿', '🦔'];
+
+function getRandomEmojis(count) {
+    const shuffled = [...EMOJIS].sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, count);
+}
+
+function generateDifficulty() {
+    const totalCount = Math.floor(Math.random() * 5) + 2; // 2 to 6 buttons
+    const correctCount = Math.floor(Math.random() * (totalCount - 1)) + 1; // 1 to totalCount-1
+    const emojis = getRandomEmojis(totalCount);
+    const indices = Array.from({length: totalCount}, (_, i) => i);
+    const correctIndices = indices.sort(() => 0.5 - Math.random()).slice(0, correctCount);
+
+    return { totalCount, correctCount, emojis, correctIndices };
+}
 
 // Clean up old sessions every hour
 setInterval(() => {
@@ -19,14 +36,24 @@ setInterval(() => {
     }
 }, 3600000);
 
+app.get('/api/rankings', (req, res) => {
+    res.json(rankings.slice(0, 10));
+});
+
 app.post('/api/start', (req, res) => {
     const sessionId = uuidv4();
+    const diff = generateDifficulty();
     sessions[sessionId] = {
         winCount: 0,
-        currentAnswer: Math.floor(Math.random() * 2), // 0 or 1
+        ...diff,
         lastSeen: Date.now()
     };
-    res.json({ sessionId, winCount: 0 });
+    res.json({
+        sessionId,
+        winCount: 0,
+        choices: diff.emojis,
+        correctCount: diff.correctCount
+    });
 });
 
 app.get('/check', (req, res) => {
@@ -39,19 +66,60 @@ app.get('/check', (req, res) => {
     }
     session.lastSeen = Date.now();
 
-    const isCorrect = choice === session.currentAnswer;
+    const isCorrect = session.correctIndices.includes(choice);
 
     if (isCorrect) {
         session.winCount += 1;
-        const victory = session.winCount >= 10;
         const currentWinCount = session.winCount;
 
-        if (victory) {
-            delete sessions[sessionId];
-        } else {
-            session.currentAnswer = Math.floor(Math.random() * 2);
+        const nextDiff = generateDifficulty();
+        session.emojis = nextDiff.emojis;
+        session.correctIndices = nextDiff.correctIndices;
+        session.correctCount = nextDiff.correctCount;
+
+        res.send(`
+            <!DOCTYPE html>
+            <html>
+            <body>
+                <script>
+                    const data = {
+                        type: 'quiz-result',
+                        correct: true,
+                        winCount: ${currentWinCount},
+                        choices: ${JSON.stringify(nextDiff.emojis)},
+                        correctCount: ${nextDiff.correctCount}
+                    };
+                    if (window.opener) {
+                        window.opener.postMessage(data, '*');
+                        window.close();
+                    } else {
+                        const params = new URLSearchParams({
+                            correct: 'true',
+                            winCount: currentWinCount,
+                            choices: JSON.stringify(data.choices),
+                            correctCount: data.correctCount
+                        });
+                        window.location.href = '/?' + params.toString();
+                    }
+                </script>
+                <p>正解！画面を戻ります...</p>
+            </body>
+            </html>
+        `);
+    } else {
+        const finalScore = session.winCount;
+        let topToken = null;
+
+        if (finalScore > 0) {
+            const rankingEntry = { score: finalScore, date: new Date(), id: uuidv4().slice(0, 8) };
+            rankings.push(rankingEntry);
+            rankings.sort((a, b) => b.score - a.score);
+            if (rankings.indexOf(rankingEntry) < 10) {
+                topToken = `TOP-${rankingEntry.id}-${finalScore}`;
+            }
         }
 
+        delete sessions[sessionId];
         res.send(`
             <!DOCTYPE html>
             <html>
@@ -60,29 +128,10 @@ app.get('/check', (req, res) => {
                     if (window.opener) {
                         window.opener.postMessage({
                             type: 'quiz-result',
-                            correct: true,
-                            winCount: ${currentWinCount},
-                            victory: ${victory}
+                            correct: false,
+                            score: ${finalScore},
+                            token: ${topToken ? `'${topToken}'` : 'null'}
                         }, '*');
-                        window.close();
-                    } else {
-                        // Fallback if no opener (e.g. redirected)
-                        window.location.href = '/?victory=${victory}&winCount=${currentWinCount}';
-                    }
-                </script>
-                <p>正解！画面を戻ります...</p>
-            </body>
-            </html>
-        `);
-    } else {
-        delete sessions[sessionId];
-        res.send(`
-            <!DOCTYPE html>
-            <html>
-            <body>
-                <script>
-                    if (window.opener) {
-                        window.opener.postMessage({ type: 'quiz-result', correct: false }, '*');
                     }
                     window.location.href = 'https://otieu.com/4/10530383';
                 </script>

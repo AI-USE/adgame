@@ -3,30 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>目指せ十連続マスター</title>
+    <title>無限マスターへの道</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div id="app">
         <!-- Start Screen -->
         <div id="start-screen" class="screen">
-            <h1>目指せ十連続マスター</h1>
-            <p>二択クイズに10回連続で正解してマスターを目指そう！</p>
+            <h1>無限マスターへの道</h1>
+            <p>次々と現れる絵文字の中から正解を見つけ出し、無限の連勝を目指せ！</p>
             <p class="warning">※不正解時はゲームオーバーとなり、スポンサー広告が表示されます</p>
             <button id="start-btn">ゲーム開始</button>
         </div>
 
         <!-- Game Screen -->
         <div id="game-screen" class="screen hidden">
-            <h1>目指せ十連続マスター</h1>
+            <h1>無限マスターへの道</h1>
             <div class="status">
-                連勝数: <span id="win-count">0</span> / 10
+                現在の連勝数: <span id="win-count">0</span>
             </div>
             <div class="quiz-container">
-                <p>どちらかが正解です。選んでください。</p>
-                <div class="choices">
-                    <button class="choice-btn" data-choice="0">A</button>
-                    <button class="choice-btn" data-choice="1">B</button>
+                <p id="quiz-instruction">選んでください。</p>
+                <div id="choices-container" class="choices">
+                    <!-- Dynamic buttons -->
                 </div>
             </div>
             <p class="small-warning">※不正解時はゲームオーバーとなり、スポンサー広告が表示されます</p>
@@ -35,17 +34,20 @@
         <!-- Game Over Screen -->
         <div id="game-over-screen" class="screen hidden">
             <h1>ゲームオーバー...</h1>
-            <p>残念！連勝がストップしました。</p>
+            <p>最終スコア: <span id="final-score">0</span></p>
+            <div id="token-display" class="hidden">
+                <p>トップランカー識別トークン:</p>
+                <code id="rank-token"></code>
+            </div>
             <div id="ad-trigger" class="ad-trigger">
                 ここをクリックして再挑戦
             </div>
         </div>
 
-        <!-- Victory Screen -->
-        <div id="victory-screen" class="screen hidden">
-            <h1>十連続マスター達成！</h1>
-            <p>おめでとうございます！あなたは真のマスターです。</p>
-            <button id="retry-btn">もう一度プレイ</button>
+        <!-- Rankings Screen -->
+        <div id="rankings-container" class="ranking-section">
+            <h2>ランキング</h2>
+            <ul id="rankings-list"></ul>
         </div>
 
         <!-- Block Warning Modal -->
