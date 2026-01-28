@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理者ダッシュボード - 無限マスターへの道</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .admin-container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .stat-card {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #1a73e8;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        th, td {
+            text-align: left;
+            padding: 0.75rem;
+            border-bottom: 1px solid #eee;
+        }
+        .login-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .login-box {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            text-align: center;
+        }
+        input[type="password"], input[type="number"] {
+            padding: 0.5rem;
+            margin: 0.5rem 0;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .delete-btn {
+            background: #d93025;
+            color: white;
+            border: none;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .dummy-form {
+            background: #f1f3f4;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <div id="login-overlay" class="login-overlay">
+        <div class="login-box">
+            <h2>管理者ログイン</h2>
+            <input type="password" id="admin-password" placeholder="パスワードを入力">
+            <button id="login-btn">ログイン</button>
+        </div>
+    </div>
+
+    <div class="admin-container hidden" id="admin-dashboard">
+        <h1>管理者ダッシュボード</h1>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div>総プレイ回数</div>
+                <div class="stat-value" id="total-plays">0</div>
+            </div>
+            <div class="stat-card">
+                <div>総正解数</div>
+                <div class="stat-value" id="total-correct">0</div>
+            </div>
+            <div class="stat-card">
+                <div>総不正解数</div>
+                <div class="stat-value" id="total-incorrect">0</div>
+            </div>
+        </div>
+
+        <div class="dummy-form">
+            <h3>ダミー成績入力</h3>
+            <input type="number" id="dummy-score" placeholder="連勝数を入力">
+            <button id="add-dummy-btn">追加</button>
+        </div>
+
+        <h2>ランキング管理</h2>
+        <table id="ranking-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>スコア</th>
+                    <th>日付</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+        <h2>最近の履歴</h2>
+        <table id="history-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>スコア</th>
+                    <th>日付</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <script src="admin.js"></script>
+</body>
+</html>

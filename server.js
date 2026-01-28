@@ -9,6 +9,14 @@ app.use(express.static('public'));
 
 const sessions = {};
 const rankings = [];
+const history = [];
+const stats = {
+    totalPlays: 0,
+    totalCorrect: 0,
+    totalIncorrect: 0
+};
+const ADMIN_PASSWORD = 'admin'; // In a real app, use environment variables
+
 const EMOJIS = ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐻‍❄️', '🐨', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵', '🐔', '🐧', '🐦', '🐤', '🐣', '🐥', '🦆', '🦅', '🦉', '🦇', '🐺', '🐗', '🐴', '🦄', '🐝', '🪱', '🐛', '🦋', '🐌', '🐞', '🐜', '🪰', '🪲', '🪳', '🦟', '🦗', '🕷', '🕸', '🦂', '🐢', '🐍', '🦎', '🦖', '🦕', '🐙', '🦑', '🦐', '🦞', '🦀', '🐡', '🐠', '🐟', '🐬', '🐳', '🐋', '🦈', '🐊', '🐅', '🐆', '🦓', '🦍', '🦧', '🦣', '🐘', '🦛', '🦏', '🐪', '🐫', '🦒', '🦘', '🦬', '🐃', '🐂', '🐄', '🐎', '🐖', '🐏', '🐑', '🦙', '🐐', '🦌', '🐕', '🐩', '🦮', '🐕‍🦺', '🐈', '🐈‍⬛', '🐓', '🦃', '🦤', '🦚', '🦜', '🦢', '🦩', '🕊', '🐇', '🦝', '🦨', '🦡', '🦦', '🦫', '🦥', '🐁', '🐀', '🐿', '🦔'];
 
 function getRandomEmojis(count) {
@@ -48,6 +56,7 @@ app.post('/api/start', (req, res) => {
         ...diff,
         lastSeen: Date.now()
     };
+    stats.totalPlays += 1;
     res.json({
         sessionId,
         winCount: 0,
@@ -70,6 +79,7 @@ app.get('/check', (req, res) => {
 
     if (isCorrect) {
         session.winCount += 1;
+        stats.totalCorrect += 1;
         const currentWinCount = session.winCount;
 
         const nextDiff = generateDifficulty();
@@ -108,10 +118,19 @@ app.get('/check', (req, res) => {
         `);
     } else {
         const finalScore = session.winCount;
+        stats.totalIncorrect += 1;
         let topToken = null;
 
+        const historyEntry = {
+            id: uuidv4().slice(0, 8),
+            score: finalScore,
+            date: new Date()
+        };
+        history.unshift(historyEntry);
+        if (history.length > 100) history.pop();
+
         if (finalScore > 0) {
-            const rankingEntry = { score: finalScore, date: new Date(), id: uuidv4().slice(0, 8) };
+            const rankingEntry = { ...historyEntry };
             rankings.push(rankingEntry);
             rankings.sort((a, b) => b.score - a.score);
             if (rankings.indexOf(rankingEntry) < 10) {
@@ -139,6 +158,47 @@ app.get('/check', (req, res) => {
             </body>
             </html>
         `);
+    }
+});
+
+// Admin Endpoints
+const adminAuth = (req, res, next) => {
+    const password = req.headers['x-admin-password'];
+    if (password === ADMIN_PASSWORD) {
+        next();
+    } else {
+        res.status(403).json({ error: 'Unauthorized' });
+    }
+};
+
+app.get('/api/admin/data', adminAuth, (req, res) => {
+    res.json({
+        stats,
+        rankings,
+        history
+    });
+});
+
+app.post('/api/admin/add-dummy', adminAuth, (req, res) => {
+    const { score } = req.body;
+    const rankingEntry = {
+        score: parseInt(score),
+        date: new Date(),
+        id: 'DUMMY-' + Math.floor(Math.random() * 1000)
+    };
+    rankings.push(rankingEntry);
+    rankings.sort((a, b) => b.score - a.score);
+    res.json({ success: true });
+});
+
+app.post('/api/admin/delete-ranking', adminAuth, (req, res) => {
+    const { id } = req.body;
+    const index = rankings.findIndex(r => r.id === id);
+    if (index !== -1) {
+        rankings.splice(index, 1);
+        res.json({ success: true });
+    } else {
+        res.status(404).json({ error: 'Not found' });
     }
 });
 
