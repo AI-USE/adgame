@@ -108,6 +108,33 @@ window.addEventListener('keydown', resetWaitPenalty);
 // Initialize
 if (state.nickname) nicknameInput.value = state.nickname;
 
+// Handle Fallback URL Parameters (from redirected main window)
+const params = new URLSearchParams(window.location.search);
+if (params.get('correct') === 'true') {
+    state.winCount = parseInt(params.get('winCount'));
+    // We don't have the full session data here, so we might need to fetch it or rely on params
+    // But since renderQuiz needs the choices, they are passed in params
+    const quizData = {
+        winCount: state.winCount,
+        winProb: parseInt(params.get('winProb')),
+        bonusChance: parseFloat(params.get('bonusChance')),
+        choices: JSON.parse(params.get('choices')),
+        correctCount: parseInt(params.get('correctCount')),
+        isBonus: params.get('isBonus') === 'true'
+    };
+    // Get sessionId from localStorage if missing in params
+    state.sessionId = localStorage.getItem('lastSessionId');
+    renderQuiz(quizData);
+    showScreen(gameScreen);
+    // Clear params
+    window.history.replaceState({}, document.title, "/");
+} else if (params.get('failed') === '1') {
+    finalScoreDisplay.textContent = params.get('score');
+    showScreen(gameOverScreen);
+    updateRankings();
+    window.history.replaceState({}, document.title, "/");
+}
+
 // Check for existing wait penalty on load
 const savedWaitFinish = parseInt(localStorage.getItem('wait_finish_at') || '0');
 if (savedWaitFinish > Date.now()) {
@@ -187,6 +214,7 @@ const startGame = async () => {
 
     const data = await res.json();
     state.sessionId = data.sessionId;
+    localStorage.setItem('lastSessionId', data.sessionId);
     state.winCount = data.winCount;
     renderQuiz(data);
     showScreen(gameScreen);

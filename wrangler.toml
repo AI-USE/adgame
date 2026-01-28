@@ -6,7 +6,5 @@ pages_build_output_dir = "public"
 ADMIN_PASSWORD = "admin"
 
 [[kv_namespaces]]
-binding= "KV"
-id=  "94ea3ecf094c429b872d19b7a0389afb"
-preview_id="<ID_OF_PREVIEW_KV_NAMESPACE_FOR_LOCAL_DEVELOPMENT>"
-  
+binding = "MIN_KV"
+id = "YOUR_KV_NAMESPACE_ID"

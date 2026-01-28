@@ -25,29 +25,36 @@ export function generateDifficulty(winCount = 0, bonusMissRate = null, winProb =
 }
 
 export async function getStorage(env) {
-    const data = await env.MIN_KV.get('game_data', 'json');
-    return data || {
-        rankings: [],
-        history: [],
-        emails: [],
-        playerMetadata: {},
-        stats: { totalPlays: 0, totalCorrect: 0, totalIncorrect: 0 },
-        config: { sponsorUrl: 'https://otieu.com/4/10530383' }
+    if (!env.MIN_KV) {
+        throw new Error('KV namespace "MIN_KV" is not bound. Please check your wrangler.toml and Cloudflare dashboard settings.');
+    }
+    const data = await env.MIN_KV.get('game_data', 'json') || {};
+    return {
+        rankings: data.rankings || [],
+        history: data.history || [],
+        emails: data.emails || [],
+        playerMetadata: data.playerMetadata || {},
+        stats: data.stats || { totalPlays: 0, totalCorrect: 0, totalIncorrect: 0 },
+        config: data.config || { sponsorUrl: 'https://otieu.com/4/10530383' }
     };
 }
 
 export async function saveStorage(env, data) {
+    if (!env.MIN_KV) return;
     await env.MIN_KV.put('game_data', JSON.stringify(data));
 }
 
 export async function getSession(env, sessionId) {
+    if (!env.MIN_KV) return null;
     return await env.MIN_KV.get(`session:${sessionId}`, 'json');
 }
 
 export async function saveSession(env, sessionId, sessionData) {
+    if (!env.MIN_KV) return;
     await env.MIN_KV.put(`session:${sessionId}`, JSON.stringify(sessionData), { expirationTtl: 3600 });
 }
 
 export async function deleteSession(env, sessionId) {
+    if (!env.MIN_KV) return;
     await env.MIN_KV.delete(`session:${sessionId}`);
 }
