@@ -278,8 +278,8 @@ const startGame = async () => {
         });
 
         if (!res.ok) {
-            if (res.status === 403) {
-                const err = await res.json();
+            const err = await res.json().catch(() => ({}));
+            if (err.message) {
                 alert(err.message);
                 return;
             }

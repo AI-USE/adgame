@@ -11,12 +11,27 @@ export async function onRequestPost(context) {
     let isBonus = false;
     let bonusChance = 0.01;
 
+    // ニックネーム重複チェック (自分以外のユーザーが既に使用していないか)
+    for (const [uid, pMeta] of Object.entries(storage.playerMetadata)) {
+        if (pMeta.nickname === nickname && uid !== userId) {
+            return new Response(JSON.stringify({
+                message: "このニックネームは既に使用されています。別の名前を入力してください。"
+            }), {
+                status: 400,
+                headers: { 'Content-Type': 'application/json; charset=UTF-8' }
+            });
+        }
+    }
+
     if (!storage.playerMetadata[userId]) {
         storage.playerMetadata[userId] = {
+            nickname: nickname,
             cumulativeBonusChance: 0.01,
             hasAchieved10Wins: false,
             lastBonusDate: null
         };
+    } else {
+        storage.playerMetadata[userId].nickname = nickname;
     }
     const meta = storage.playerMetadata[userId];
 
