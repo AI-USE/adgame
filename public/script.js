@@ -195,11 +195,7 @@ const showScreen = (screen) => {
     [startScreen, gameScreen, gameOverScreen].forEach(s => s.classList.add('hidden'));
     screen.classList.remove('hidden');
 
-    if (screen === startScreen) {
-        loadAd('10533804', 'https://gizokraijaw.net/vignette.min.js');
-    } else if (screen === gameScreen) {
-        loadAd('10533803', 'https://nap5k.com/tag.min.js');
-    } else if (screen === gameOverScreen) {
+    if (screen === gameOverScreen) {
         loadAd('10533802', 'https://al5sm.com/tag.min.js');
     }
 };
