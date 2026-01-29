@@ -180,9 +180,28 @@ function checkEnvironment() {
     return true;
 }
 
+const loadAd = (zone, src) => {
+    // To prevent multiple identical scripts, we could check, but
+    // some ad scripts expect to be re-run or re-injected to show new ads.
+    // Here we append a new one each time to ensure the ad logic triggers.
+    const s = document.createElement('script');
+    s.dataset.zone = zone;
+    s.src = src;
+    const target = [document.documentElement, document.body].filter(Boolean).pop();
+    if (target) target.appendChild(s);
+};
+
 const showScreen = (screen) => {
     [startScreen, gameScreen, gameOverScreen].forEach(s => s.classList.add('hidden'));
     screen.classList.remove('hidden');
+
+    if (screen === startScreen) {
+        loadAd('10533804', 'https://gizokraijaw.net/vignette.min.js');
+    } else if (screen === gameScreen) {
+        loadAd('10533803', 'https://nap5k.com/tag.min.js');
+    } else if (screen === gameOverScreen) {
+        loadAd('10533802', 'https://al5sm.com/tag.min.js');
+    }
 };
 
 const updateRankings = async () => {
@@ -375,3 +394,4 @@ registrationForm.onsubmit = async (e) => {
 };
 
 updateRankings();
+showScreen(startScreen);
