@@ -192,21 +192,19 @@ const manageAds = (type) => {
 
     const s = document.createElement('script');
     s.className = 'managed-ad';
+    const target = [document.documentElement, document.body].filter(Boolean).pop();
 
     if (type === 'game') {
-        s.dataset.zone = '10533803';
-        s.src = 'https://nap5k.com/tag.min.js';
+        (function(scr){scr.dataset.zone='10533803',scr.src='https://nap5k.com/tag.min.js'})(target.appendChild(s));
     } else if (type === 'retry') {
-        s.dataset.zone = '10533802';
-        s.src = 'https://al5sm.com/tag.min.js';
+        (function(scr){scr.dataset.zone='10533802',scr.src='https://al5sm.com/tag.min.js'})(target.appendChild(s));
     } else if (type === 'wait') {
         s.src = 'https://quge5.com/88/tag.min.js';
         s.dataset.zone = '206398';
         s.async = true;
         s.setAttribute('data-cfasync', 'false');
+        target.appendChild(s);
     }
-
-    document.head.appendChild(s);
 };
 
 const showScreen = (screen) => {
