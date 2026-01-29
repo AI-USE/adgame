@@ -193,10 +193,7 @@ const manageAds = (type) => {
     const s = document.createElement('script');
     s.className = 'managed-ad';
 
-    if (type === 'home') {
-        s.dataset.zone = '10533804';
-        s.src = 'https://gizokraijaw.net/vignette.min.js';
-    } else if (type === 'game') {
+    if (type === 'game') {
         s.dataset.zone = '10533803';
         s.src = 'https://nap5k.com/tag.min.js';
     } else if (type === 'retry') {
@@ -217,7 +214,7 @@ const showScreen = (screen) => {
     screen.classList.remove('hidden');
 
     if (screen === startScreen) {
-        manageAds('home');
+        manageAds('none');
     } else if (screen === gameScreen) {
         manageAds('game');
     } else if (screen === gameOverScreen) {
@@ -335,14 +332,29 @@ const renderQuiz = (data) => {
     });
 };
 
+const showCorrectEffect = () => {
+    const overlay = document.createElement('div');
+    overlay.className = 'success-overlay';
+    document.body.appendChild(overlay);
+
+    const text = document.createElement('div');
+    text.className = 'effect-text';
+    text.textContent = '正解！';
+    document.body.appendChild(text);
+
+    setTimeout(() => {
+        overlay.remove();
+        text.remove();
+    }, 800);
+};
+
 // Listen for results
 window.addEventListener('message', (e) => {
     if (e.data && e.data.type === 'quiz-result') {
         if (e.data.correct) {
             state.winCount = e.data.winCount;
             renderQuiz(e.data);
-            document.body.classList.add('bg-emerald-50');
-            setTimeout(() => document.body.classList.remove('bg-emerald-50'), 300);
+            showCorrectEffect();
         } else {
             if (!e.data.limitReached) {
                 incrementAdCount();
