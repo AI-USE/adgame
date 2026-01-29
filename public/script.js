@@ -73,6 +73,7 @@ function startWaitPenalty() {
     localStorage.setItem('wait_finish_at', finishAt.toString());
 
     waitOverlay.classList.remove('hidden');
+    manageAds('wait');
 
     if (waitInterval) clearInterval(waitInterval);
     waitInterval = setInterval(updateWaitTick, 100);
@@ -103,6 +104,7 @@ function endWaitPenalty() {
     waitInterval = null;
     localStorage.removeItem('wait_finish_at');
     waitOverlay.classList.add('hidden');
+    manageAds('none');
     startGame(); // Restart
 }
 
@@ -145,6 +147,7 @@ if (params.get('correct') === 'true') {
 const savedWaitFinish = parseInt(localStorage.getItem('wait_finish_at') || '0');
 if (savedWaitFinish > Date.now()) {
     waitOverlay.classList.remove('hidden');
+    manageAds('wait');
     waitInterval = setInterval(updateWaitTick, 100);
 }
 
@@ -180,23 +183,45 @@ function checkEnvironment() {
     return true;
 }
 
-const loadAd = (zone, src) => {
-    // To prevent multiple identical scripts, we could check, but
-    // some ad scripts expect to be re-run or re-injected to show new ads.
-    // Here we append a new one each time to ensure the ad logic triggers.
+const manageAds = (type) => {
+    // Remove existing managed ads
+    const existing = document.querySelectorAll('.managed-ad');
+    existing.forEach(el => el.remove());
+
+    if (!type || type === 'none') return;
+
     const s = document.createElement('script');
-    s.dataset.zone = zone;
-    s.src = src;
-    const target = [document.documentElement, document.body].filter(Boolean).pop();
-    if (target) target.appendChild(s);
+    s.className = 'managed-ad';
+
+    if (type === 'home') {
+        s.dataset.zone = '10533804';
+        s.src = 'https://gizokraijaw.net/vignette.min.js';
+    } else if (type === 'game') {
+        s.dataset.zone = '10533803';
+        s.src = 'https://nap5k.com/tag.min.js';
+    } else if (type === 'retry') {
+        s.dataset.zone = '10533802';
+        s.src = 'https://al5sm.com/tag.min.js';
+    } else if (type === 'wait') {
+        s.src = 'https://quge5.com/88/tag.min.js';
+        s.dataset.zone = '206398';
+        s.async = true;
+        s.setAttribute('data-cfasync', 'false');
+    }
+
+    document.head.appendChild(s);
 };
 
 const showScreen = (screen) => {
     [startScreen, gameScreen, gameOverScreen].forEach(s => s.classList.add('hidden'));
     screen.classList.remove('hidden');
 
-    if (screen === gameOverScreen) {
-        loadAd('10533802', 'https://al5sm.com/tag.min.js');
+    if (screen === startScreen) {
+        manageAds('home');
+    } else if (screen === gameScreen) {
+        manageAds('game');
+    } else if (screen === gameOverScreen) {
+        manageAds('retry');
     }
 };
 
