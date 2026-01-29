@@ -2,6 +2,9 @@ name = "infinite-master"
 compatibility_date = "2024-01-01"
 pages_build_output_dir = "public"
 
+[vars]
+ADMIN_PASSWORD = "admin"
+
 [[kv_namespaces]]
 binding = "KV"
 id = "94ea3ecf094c429b872d19b7a0389afb"

@@ -30,21 +30,16 @@ export async function onRequestPost(context) {
         });
     }
 
-    // ボーナスプレイの判定 (10連達成後)
-    if (meta.hasAchieved10Wins) {
-        bonusChance = meta.cumulativeBonusChance || 0.01;
-        if (Math.random() < bonusChance) {
-            isBonus = true;
-            // ボーナス時は当選確率 70-99% (低い方に偏らせる)
-            winProb = Math.floor(Math.pow(Math.random(), 2) * (99 - 70 + 1)) + 70;
-            meta.cumulativeBonusChance = 0.01;
-            meta.lastBonusDate = new Date().toISOString();
-        } else {
-            meta.cumulativeBonusChance = bonusChance + 0.02;
-        }
+    // ボーナスプレイの判定 (プレイ毎に確率上昇)
+    bonusChance = meta.cumulativeBonusChance || 0.01;
+    if (Math.random() < bonusChance) {
+        isBonus = true;
+        // ボーナス時は当選確率 70-99% (低い方に偏らせる)
+        winProb = Math.floor(Math.pow(Math.random(), 2) * (99 - 70 + 1)) + 70;
+        meta.cumulativeBonusChance = 0.01;
+        meta.lastBonusDate = new Date().toISOString();
     } else {
-        // 10連未達成の場合はボーナス発生しない
-        bonusChance = 0;
+        meta.cumulativeBonusChance = bonusChance + 0.02;
         isBonus = false;
     }
 
